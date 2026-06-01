@@ -3,38 +3,42 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Team Connect — Inventaire Comptable</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --gold:#2e7d32;--goldl:#81c784;--goldbg:#f5faf5;--brown:#1b5e20;
-  --wh:#fff;--be:#e0e0e0;--gr:#999;--grl:#f3f4f6;
+  --gold:#9c27b0;--goldl:#ce93d8;--goldbg:#FFF8E7;--brown:#6b4c11;
+  --wh:#fff;--be:#f0e8d8;--gr:#999;--grl:#f3f4f6;
   --re:#e53935;--rel:#ffebee;
   --gn:#22c55e;--gnl:#dcfce7;
   --or:#f97316;--orl:#ffedd5;
   --bl:#3b82f6;--bll:#dbeafe;
-  --font:'Nunito',sans-serif;--r:16px;--sh:0 2px 12px rgba(0,0,0,0.06);
+  --font:'Nunito',sans-serif;--r:16px;--sh:0 2px 12px rgba(107,76,17,0.08);
 }
-html,body{height:100%;font-family:var(--font);background:var(--goldbg);color:#333;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;font-family:var(--font);background:var(--goldbg);color:var(--brown);-webkit-tap-highlight-color:transparent}
 button{font-family:var(--font);cursor:pointer;border:none;outline:none}
 input,select{font-family:var(--font);outline:none}
 
-header{background:linear-gradient(160deg,#43a047 0%,#2e7d32 50%,#1b5e20 100%);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 16px rgba(46,125,50,0.3);position:sticky;top:0;z-index:10}
+header{background:linear-gradient(160deg,#ab47bc 0%,#9c27b0 50%,#7b1fa2 100%);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 16px rgba(156,39,176,0.3);position:sticky;top:0;z-index:10}
 .hdr-left{display:flex;align-items:center;gap:10px}
 .hdr-left .logo{font-size:1.6rem;filter:drop-shadow(0 2px 4px rgba(0,0,0,.15))}
 .hdr-left .name{font-size:.6rem;font-weight:700;color:rgba(255,255,255,.6);line-height:1;letter-spacing:1px;text-transform:uppercase}
 .hdr-left .title{font-size:1.05rem;font-weight:900;color:#fff;line-height:1.2;text-shadow:0 1px 2px rgba(0,0,0,.15)}
 .back-btn{background:none;border:none;font-size:28px;color:#fff;cursor:pointer;width:44px;height:44px;display:flex;align-items:center;justify-content:center}
 
-.main{padding:16px;max-width:700px;margin:0 auto;padding-bottom:120px}
+.main{padding:16px;max-width:600px;margin:0 auto;padding-bottom:120px}
+@media(min-width:768px){.main{max-width:95%;padding:16px 24px}}
 .card{background:var(--wh);border-radius:var(--r);box-shadow:var(--sh);padding:16px;margin-bottom:14px}
 
 /* Steps */
 .steps{display:flex;gap:4px;margin-bottom:16px}
 .step{flex:1;padding:10px 6px;border-radius:12px;background:var(--wh);border:2px solid var(--be);font-weight:800;font-size:.78rem;color:var(--gr);text-align:center}
-.step.active{background:linear-gradient(145deg,#43a047,#2e7d32);border-color:#2e7d32;color:#fff;box-shadow:0 3px 0 #1b5e20}
-.step.done{background:#dcfce7;border-color:#22c55e;color:#166534}
+.step.active{background:linear-gradient(145deg,#ab47bc,#9c27b0);border-color:#9c27b0;color:#fff;box-shadow:0 3px 0 #6a1b9a}
+.step.done{background:#f3e5f5;border-color:#9c27b0;color:#7b1fa2}
 
 /* Family header */
 .fam-header{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;border-radius:14px;margin:8px 0 4px;box-shadow:0 2px 8px rgba(0,0,0,.08);color:#fff;font-weight:900;font-size:.95rem;-webkit-tap-highlight-color:transparent}
@@ -43,53 +47,53 @@ header{background:linear-gradient(160deg,#43a047 0%,#2e7d32 50%,#1b5e20 100%);pa
 .fam-header .badge{margin-left:auto;background:rgba(255,255,255,.25);border-radius:10px;padding:2px 10px;font-size:.72rem;font-weight:800}
 
 /* Product row */
-.prod-row{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid #f0f0f0;transition:background .15s}
+.prod-row{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--be);transition:background .15s}
 .prod-row:last-child{border-bottom:none}
 .prod-row.excluded{opacity:.4;text-decoration:line-through}
-.prod-check{width:24px;height:24px;accent-color:#2e7d32;flex-shrink:0}
-.prod-nom{font-weight:700;font-size:.85rem;color:#333;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.prod-ref{font-size:.7rem;color:#999;font-weight:600;flex-shrink:0}
+.prod-check{width:24px;height:24px;accent-color:#9c27b0;flex-shrink:0}
+.prod-nom{font-weight:700;font-size:.85rem;color:var(--brown);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prod-ref{font-size:.7rem;color:var(--gr);font-weight:600;flex-shrink:0}
 
 /* Saisie row */
-.saisie-row{padding:12px;border-bottom:1px solid #f0f0f0;background:var(--wh)}
+.saisie-row{padding:12px;border-bottom:1px solid var(--be);background:var(--wh)}
 .saisie-row.filled{background:#f0fdf4}
-.saisie-nom{font-weight:800;font-size:.88rem;color:#333;margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.saisie-ref{font-size:.7rem;color:#999;font-weight:600}
+.saisie-nom{font-weight:800;font-size:.88rem;color:var(--brown);margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.saisie-ref{font-size:.7rem;color:var(--gr);font-weight:600}
 .saisie-fields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px}
 .saisie-field{display:flex;flex-direction:column;gap:2px}
 .saisie-label{font-size:.68rem;font-weight:800;color:#666;text-transform:uppercase}
-.saisie-input{width:100%;height:44px;border:2px solid #e0e0e0;border-radius:10px;font-size:1.1rem;font-weight:900;text-align:center;color:#333;background:#fafafa;-webkit-appearance:none}
-.saisie-input:focus{border-color:#2e7d32;background:#fff}
-.saisie-input.has-val{border-color:#22c55e;background:#f0fdf4}
-.saisie-valeur{margin-top:6px;text-align:right;font-size:.82rem;font-weight:800;color:#2e7d32}
+.saisie-input{width:100%;height:44px;border:2px solid var(--be);border-radius:10px;font-size:1.1rem;font-weight:900;text-align:center;color:var(--brown);background:var(--wh);-webkit-appearance:none}
+.saisie-input:focus{border-color:#9c27b0;background:#fff}
+.saisie-input.has-val{border-color:var(--gn);background:var(--gnl)}
+.saisie-valeur{margin-top:6px;text-align:right;font-size:.82rem;font-weight:800;color:#7b1fa2}
 
 /* Recap */
 .recap-table{width:100%;border-collapse:collapse;font-size:.85rem}
-.recap-table th{text-align:left;padding:10px 8px;background:#f0f0f0;font-weight:900;color:#333;border-bottom:2px solid #ddd}
-.recap-table td{padding:8px;border-bottom:1px solid #f0f0f0}
-.recap-table .fam-row td{font-weight:800;background:#fafafa}
-.recap-table .total-row td{font-weight:900;font-size:1rem;background:#e8f5e9;border-top:3px solid #2e7d32;color:#1b5e20}
+.recap-table th{text-align:left;padding:10px 8px;background:var(--be);font-weight:900;color:var(--brown);border-bottom:2px solid #d5c9a8}
+.recap-table td{padding:8px;border-bottom:1px solid var(--be)}
+.recap-table .fam-row td{font-weight:800;background:#faf8f5}
+.recap-table .total-row td{font-weight:900;font-size:1rem;background:#f3e5f5;border-top:3px solid #9c27b0;color:#7b1fa2}
 .recap-table .val{text-align:right;font-variant-numeric:tabular-nums}
 
 /* Buttons */
-.btn-p{background:linear-gradient(145deg,#43a047,#1b5e20);color:#fff;font-weight:800;font-size:1rem;padding:14px 24px;border-radius:var(--r);width:100%;box-shadow:0 4px 0 #0d3b0f}
-.btn-p:active{transform:translateY(2px);box-shadow:0 2px 0 #0d3b0f}
+.btn-p{background:linear-gradient(145deg,#ab47bc,#7b1fa2);color:#fff;font-weight:800;font-size:1rem;padding:14px 24px;border-radius:var(--r);width:100%;box-shadow:0 4px 0 #6a1b9a}
+.btn-p:active{transform:translateY(2px);box-shadow:0 2px 0 #6a1b9a}
 .btn-p:disabled{opacity:.5;cursor:not-allowed}
-.btn-s{background:var(--wh);color:#2e7d32;font-weight:800;font-size:.9rem;padding:12px 20px;border-radius:var(--r);width:100%;border:2px solid #2e7d32}
-.btn-s:active{background:#f0fdf4}
+.btn-s{background:var(--wh);color:#7b1fa2;font-weight:800;font-size:.9rem;padding:12px 20px;border-radius:var(--r);width:100%;border:2px solid #ce93d8}
+.btn-s:active{background:#f3e5f5}
 .btn-row{display:flex;gap:10px;margin-top:12px}
 .btn-row .btn-p,.btn-row .btn-s{flex:1}
 
 /* Search */
-.search-box{width:100%;padding:10px 14px;border:2px solid #e0e0e0;border-radius:12px;font-size:.9rem;font-weight:700;color:#333;background:var(--wh);margin-bottom:12px}
-.search-box:focus{border-color:#2e7d32}
+.search-box{width:100%;padding:10px 14px;border:2px solid var(--be);border-radius:12px;font-size:.9rem;font-weight:700;color:var(--brown);background:var(--wh);margin-bottom:12px}
+.search-box:focus{border-color:#9c27b0}
 
 /* Floating bar */
 .floating-bar{position:fixed;bottom:0;left:0;right:0;background:var(--wh);padding:12px 16px;box-shadow:0 -2px 12px rgba(0,0,0,.1);z-index:50;display:flex;align-items:center;gap:12px}
-.floating-total{font-weight:900;font-size:1.1rem;color:#1b5e20;flex:1}
-.floating-count{font-size:.78rem;color:#666;font-weight:700}
+.floating-total{font-weight:900;font-size:1.1rem;color:#7b1fa2;flex:1}
+.floating-count{font-size:.78rem;color:var(--gr);font-weight:700}
 
-@media(min-width:768px){.main{max-width:900px}}
+@media(min-width:768px){.main{max-width:95%;padding:16px 24px}}
 </style>
 </head>
 <body>
@@ -99,7 +103,7 @@ header{background:linear-gradient(160deg,#43a047 0%,#2e7d32 50%,#1b5e20 100%);pa
     <button class="back-btn" onclick="window.location.href='/commande.html'">&#8249;</button>
     <span class="logo">&#x1F4CA;</span>
     <div>
-      <div class="name">LA MIE CALINE</div>
+      <div class="name">TEAM CONNECT</div>
       <div class="title">Inventaire Comptable</div>
     </div>
   </div>
@@ -116,9 +120,9 @@ header{background:linear-gradient(160deg,#43a047 0%,#2e7d32 50%,#1b5e20 100%);pa
 
   <!-- VIEW 1 : SELECTION -->
   <div id="view-selection">
-    <div class="card" style="text-align:center;border:2px solid #c8e6c9">
-      <div style="font-size:1.1rem;font-weight:900;color:#1b5e20;margin-bottom:4px">Selection des produits</div>
-      <div style="font-size:.82rem;color:#666">Decochez les produits que vous n'avez pas en stock</div>
+    <div class="card" style="text-align:center;border:2px solid #ce93d8">
+      <div style="font-size:1.1rem;font-weight:900;color:var(--brown);margin-bottom:4px">Selection des produits</div>
+      <div style="font-size:.82rem;color:var(--gr)">Decochez les produits que vous n'avez pas en stock</div>
     </div>
     <input type="text" class="search-box" id="search-sel" placeholder="Rechercher un produit..." oninput="filterSelection()">
     <div id="selection-list"></div>
@@ -128,13 +132,13 @@ header{background:linear-gradient(160deg,#43a047 0%,#2e7d32 50%,#1b5e20 100%);pa
 
   <!-- VIEW 2 : SAISIE -->
   <div id="view-saisie" style="display:none">
-    <div class="card" style="text-align:center;border:2px solid #c8e6c9">
-      <div style="font-size:1.1rem;font-weight:900;color:#1b5e20;margin-bottom:4px" id="saisie-title">Saisie des quantites et prix</div>
-      <div style="font-size:.82rem;color:#666" id="saisie-subtitle">Renseignez les cartons, unites et prix d'achat HT</div>
+    <div class="card" style="text-align:center;border:2px solid #ce93d8">
+      <div style="font-size:1.1rem;font-weight:900;color:var(--brown);margin-bottom:4px" id="saisie-title">Saisie des quantites et prix</div>
+      <div style="font-size:.82rem;color:var(--gr)" id="saisie-subtitle">Renseignez les cartons, unites et prix d'achat HT</div>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:12px">
       <input type="text" class="search-box" id="search-saisie" placeholder="Rechercher..." oninput="filterSaisie()" style="margin-bottom:0;flex:1">
-      <button onclick="filterSaisieVides()" id="btn-filter-vides" style="background:#fff;border:2px solid #e0e0e0;border-radius:12px;padding:8px 12px;font-family:var(--font);font-weight:800;font-size:.75rem;color:#666;white-space:nowrap;flex-shrink:0">Non saisis</button>
+      <button onclick="filterSaisieVides()" id="btn-filter-vides" style="background:var(--wh);border:2px solid var(--be);border-radius:12px;padding:8px 12px;font-family:var(--font);font-weight:800;font-size:.75rem;color:var(--gr);white-space:nowrap;flex-shrink:0">Non saisis</button>
     </div>
     <div id="saisie-familles"></div>
     <div id="saisie-list"></div>
@@ -147,9 +151,9 @@ header{background:linear-gradient(160deg,#43a047 0%,#2e7d32 50%,#1b5e20 100%);pa
 
   <!-- VIEW 3 : RECAP -->
   <div id="view-recap" style="display:none">
-    <div class="card" style="text-align:center;border:2px solid #c8e6c9">
-      <div style="font-size:1.1rem;font-weight:900;color:#1b5e20;margin-bottom:4px">Recapitulatif par famille</div>
-      <div style="font-size:.82rem;color:#666" id="recap-date"></div>
+    <div class="card" style="text-align:center;border:2px solid #ce93d8">
+      <div style="font-size:1.1rem;font-weight:900;color:var(--brown);margin-bottom:4px">Recapitulatif par famille</div>
+      <div style="font-size:.82rem;color:var(--gr)" id="recap-date"></div>
     </div>
     <div class="card" id="recap-content"></div>
     <div class="btn-row">
@@ -175,30 +179,40 @@ header{background:linear-gradient(160deg,#43a047 0%,#2e7d32 50%,#1b5e20 100%);pa
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-<script>
-// ─── AUTH ─────────────────────────────────────────────────
-var user = JSON.parse(localStorage.getItem("tc_user") || "null");
-if (!user) window.location.replace("/");
-document.getElementById("user-badge").textContent = user.nom || user.name || "?";
-</script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 import { getDatabase, ref, set, get, update } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
 var fApp = initializeApp({
   apiKey:"AIzaSyAHNdciMVNz15NoAXfc7yi9q4EnQJW8PKE",
   authDomain:"teamconnect-valence-2026.firebaseapp.com",
   projectId:"teamconnect-valence-2026",
+  storageBucket:"teamconnect-valence-2026.firebasestorage.app",
   databaseURL:"https://teamconnect-valence-2026-default-rtdb.europe-west1.firebasedatabase.app"
 });
 var auth = getAuth(fApp);
 var db = getDatabase(fApp);
+var firestore = getFirestore(fApp);
 
-// Auth anonymous
+// Auth — meme systeme que commande.html
+var user = {nom: '?'};
 var fbReady = new Promise(function(resolve) {
-  onAuthStateChanged(auth, function(u) {
-    if (!u) { signInAnonymously(auth).catch(function(){}); return; }
+  onAuthStateChanged(auth, async function(u) {
+    if (!u) { window.location.replace('/'); return; }
+    try {
+      var userDoc = await getDoc(doc(firestore, 'users', u.uid));
+      if (userDoc.exists()) {
+        user = userDoc.data();
+        user.nom = user.prenom || user.email || u.email || '?';
+      } else {
+        user = {nom: u.email || '?'};
+      }
+    } catch(e) {
+      user = {nom: u.email || '?'};
+    }
+    document.getElementById("user-badge").textContent = user.nom;
     resolve();
   });
 });
@@ -1183,8 +1197,8 @@ window.toggleFamSaisie = function(fam) {
 window.filterSaisie = function() { showOnlyVides = false; document.getElementById('btn-filter-vides').style.borderColor = '#e0e0e0'; document.getElementById('btn-filter-vides').style.color = '#666'; renderSaisie(); };
 window.filterSaisieVides = function() {
   showOnlyVides = !showOnlyVides;
-  document.getElementById('btn-filter-vides').style.borderColor = showOnlyVides ? '#e53935' : '#e0e0e0';
-  document.getElementById('btn-filter-vides').style.color = showOnlyVides ? '#e53935' : '#666';
+  document.getElementById('btn-filter-vides').style.borderColor = showOnlyVides ? '#9c27b0' : '#f0e8d8';
+  document.getElementById('btn-filter-vides').style.color = showOnlyVides ? '#7b1fa2' : '#999';
   renderSaisie();
 };
 
@@ -1226,7 +1240,7 @@ function renderRecap() {
 
     if (famCount > 0) {
       var icon = FAMILLES_ICONS[fam] || '';
-      html += '<tr class="fam-row" onclick="toggleRecapDetail(\'' + fi + '\')" style="cursor:pointer"><td>' + icon + ' ' + fam + '</td><td>' + famCount + '</td><td class="val" style="font-weight:900;color:#1b5e20">' + famTotal.toFixed(2) + ' EUR</td></tr>';
+      html += '<tr class="fam-row" onclick="toggleRecapDetail(\'' + fi + '\')" style="cursor:pointer"><td>' + icon + ' ' + fam + '</td><td>' + famCount + '</td><td class="val" style="font-weight:900;color:#7b1fa2">' + famTotal.toFixed(2) + ' EUR</td></tr>';
       html += '<tbody id="recap-detail-' + fi + '" style="display:none">' + detailRows + '</tbody>';
       totalGeneral += famTotal;
       totalProduits += famCount;
@@ -1336,7 +1350,7 @@ window.exportPDF = function() {
   doc.text('Inventaire Comptable', 14, 20);
   doc.setFontSize(10);
   doc.setFont(undefined, 'normal');
-  doc.text('La Mie Caline Valence — ' + dateStr, 14, 27);
+  doc.text('Team Connect — ' + dateStr, 14, 27);
 
   var byFam = getProductsByFamily();
   var tableRows = [];

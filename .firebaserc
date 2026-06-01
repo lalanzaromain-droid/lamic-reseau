@@ -2,14 +2,6 @@
   "projects": {
     "default": "teamconnect-valence-2026"
   },
-  "targets": {
-    "teamconnect-valence-2026": {
-      "hosting": {
-        "main": [
-          "teamconnect-valence-2026"
-        ]
-      }
-    }
-  },
+  "targets": {},
   "etags": {}
 }

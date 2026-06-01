@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>La Mie Câline — Commande</title>
+  <title>Team Connect — Module Reseau</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <div class="login-container">
     <div class="login-box">
-      <h1>La Mie Caline</h1>
-      <p class="subtitle">Module Commande</p>
+      <h1>Team Connect</h1>
+      <p class="subtitle">Module Reseau</p>
 
       <div id="login-error" class="login-error"></div>
 
@@ -20,15 +20,30 @@
       </div>
       <div class="input-group">
         <label>Mot de passe</label>
-        <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+        <input type="password" id="password" placeholder="" autocomplete="current-password">
       </div>
 
       <button class="btn btn-primary btn-full" id="btn-login">Se connecter</button>
+      <div id="forgot-link" onclick="forgotPassword()" style="cursor:pointer;color:#3b82f6;font-weight:700;font-size:.82rem;margin-top:12px;text-decoration:underline;text-align:center">Mot de passe oublie ?</div>
     </div>
   </div>
 
   <script type="module">
-    import { auth, onAuthStateChanged, signInWithEmailAndPassword } from './js/firebase-config.js';
+    import { auth, onAuthStateChanged, signInWithEmailAndPassword, sendPasswordResetEmail } from './js/firebase-config.js';
+
+    window.forgotPassword = async function() {
+      const email = document.getElementById('email').value.trim();
+      const errorDiv = document.getElementById('login-error');
+      if (!email) { showError('Entrez votre email d\'abord'); return; }
+      try {
+        await sendPasswordResetEmail(auth, email);
+        errorDiv.style.display = 'block';
+        errorDiv.style.color = '#2e7d32';
+        errorDiv.textContent = 'Email envoye ! Verifiez votre boite mail et vos courriers indesirables (spam).';
+      } catch (e) {
+        showError('Erreur: ' + (e.code === 'auth/user-not-found' ? 'Aucun compte avec cet email' : e.message));
+      }
+    };
 
     // Si déjà connecté, rediriger
     onAuthStateChanged(auth, (user) => {
@@ -63,6 +78,7 @@
           'auth/too-many-requests': 'Trop de tentatives, réessayez plus tard'
         };
         showError(messages[err.code] || 'Erreur de connexion');
+        document.getElementById('forgot-link').style.display = 'block';
       } finally {
         btnLogin.disabled = false;
         btnLogin.textContent = 'Se connecter';

@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Team Connect — Inventaire & Commandes</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -42,9 +45,9 @@ header{background:linear-gradient(160deg,#ab47bc 0%,#9c27b0 50%,#7b1fa2 100%);pa
 #sync-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;margin-left:6px}
 
 /* Rayon bubbles */
-.rayon-bubble{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:24px 14px;border-radius:20px;border:3px solid #ce93d8;background:#fff;box-shadow:0 4px 16px rgba(156,39,176,0.1);cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent;position:relative;overflow:hidden}
-.rayon-bubble:active{transform:scale(.93);box-shadow:0 2px 8px rgba(0,0,0,0.1)}
-.rayon-bubble.complet{border-color:#7b1fa2;background:#f3e5f5;box-shadow:0 4px 16px rgba(123,31,162,0.2)}
+.rayon-bubble{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:16px 10px;border-radius:14px;border:2px solid var(--be);background:var(--wh);box-shadow:0 2px 0 rgba(107,76,17,.08);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent;position:relative;overflow:hidden;font-weight:800;color:var(--brown)}
+.rayon-bubble:active{transform:translateY(2px);box-shadow:none}
+.rayon-bubble.complet{border-color:#9c27b0;background:#f3e5f5}
 
 /* Stock input */
 .stock-input{width:76px;height:52px;border:3px solid var(--be);border-radius:12px;background:var(--wh);font-size:1.4rem;font-weight:900;text-align:center;color:var(--brown);font-family:var(--font);-webkit-appearance:none;appearance:none}
@@ -84,14 +87,12 @@ header{background:linear-gradient(160deg,#ab47bc 0%,#9c27b0 50%,#7b1fa2 100%);pa
 <header>
   <div class="hdr-left">
     <button class="back-btn" onclick="headerBack()">&#8249;</button>
-    <span class="logo">&#x1F4CB;</span>
     <div>
       <div class="name" id="magasin-label">COMMANDE</div>
       <div class="title">Inventaire & Commandes <span id="sync-dot"></span></div>
     </div>
   </div>
   <div id="user-badge" style="background:rgba(255,255,255,.2);color:#fff;border-radius:20px;padding:4px 12px;font-size:.8rem;font-weight:700"></div>
-  <button class="back" onclick="window.location.href='/home.html'" style="font-size:18px;background:none;color:#fff">&#127968;</button>
 </header>
 
 <!-- LOGIN FORM (shown if not email-authenticated) -->
@@ -109,14 +110,14 @@ header{background:linear-gradient(160deg,#ab47bc 0%,#9c27b0 50%,#7b1fa2 100%);pa
 </div>
 
 <div id="app-content" style="display:none">
-<div id="date-banner" style="background:var(--goldbg);color:#7b1fa2;padding:8px 16px;text-align:center;font-size:.9rem;font-weight:800"></div>
+<div id="date-banner" style="background:var(--goldbg);color:#7b1fa2;padding:14px 16px;text-align:center;font-size:.9rem;font-weight:800;line-height:1"></div>
 
 <div class="main">
 
   <!-- WIZARD CONFIG -->
   <div id="wizard-screen" style="display:none">
     <div style="text-align:center;margin-bottom:20px">
-      <div style="font-size:2.5rem;margin-bottom:8px">&#x2699;&#xFE0F;</div>
+      <div style="font-size:1.8rem;margin-bottom:8px">&#x2699;&#xFE0F;</div>
       <div style="font-size:1.2rem;font-weight:900;color:var(--brown)">Configurer mon magasin</div>
       <div style="font-size:.82rem;color:var(--gr);margin-top:4px">Completez les 4 etapes pour commencer</div>
       <div style="background:#e9d5ff;border-radius:10px;height:8px;margin:16px 0 4px;overflow:hidden">
@@ -167,16 +168,36 @@ header{background:linear-gradient(160deg,#ab47bc 0%,#9c27b0 50%,#7b1fa2 100%);pa
     <button class="tab-btn" id="tab-historique" onclick="switchTab('historique')">&#x1F4DA; Historique</button>
   </div>
   <div class="tabs tabs-sm" id="tabs-admin" style="display:none;margin-top:0;padding-top:0">
-    <button class="tab-btn" id="tab-params" onclick="switchTab('params')">&#x2699;&#xFE0F; Params</button>
+    <button class="tab-btn" id="tab-params" onclick="switchTab('params')">&#x2699;&#xFE0F; Parametres</button>
     <button class="tab-btn" id="tab-vj" onclick="switchTab('vj')">&#x1F4CA; VJ</button>
   </div>
 
   <!-- VUE INVENTAIRE -->
   <div id="view-inventaire">
     <div id="page-rayons">
-      <div style="font-size:1.1rem;font-weight:800;color:var(--brown);margin-bottom:6px;text-align:center">&#x1F4CB; Inventaire</div>
-      <div style="font-size:.82rem;color:var(--gr);text-align:center;margin-bottom:20px">Choisissez un rayon a inventorier</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px" id="bubbles-grid"></div>
+      <div style="font-size:.82rem;color:var(--gr);text-align:center;margin-bottom:20px">Selectionnez un rayon ci-dessous</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px" id="bubbles-grid">
+        <button onclick="ouvrirRayon('surgeles')" class="rayon-bubble">
+          <span style="font-size:1.8rem">&#10052;&#65039;</span>
+          <span style="font-size:.95rem">Surgeles</span>
+          <span id="badge-surgeles" style="font-size:.7rem;font-weight:700;color:var(--gr);background:var(--be);padding:3px 10px;border-radius:10px">...</span>
+        </button>
+        <button onclick="ouvrirRayon('frais')" class="rayon-bubble">
+          <span style="font-size:1.8rem">&#129367;</span>
+          <span style="font-size:.95rem">Frais</span>
+          <span id="badge-frais" style="font-size:.7rem;font-weight:700;color:var(--gr);background:var(--be);padding:3px 10px;border-radius:10px">...</span>
+        </button>
+        <button onclick="ouvrirRayon('boissons')" class="rayon-bubble">
+          <span style="font-size:1.8rem">&#129482;</span>
+          <span style="font-size:.95rem">Boissons</span>
+          <span id="badge-boissons" style="font-size:.7rem;font-weight:700;color:var(--gr);background:var(--be);padding:3px 10px;border-radius:10px">...</span>
+        </button>
+        <button onclick="window.location.href='/inventaire-compta.html'" class="rayon-bubble">
+          <span style="font-size:1.8rem">&#128202;</span>
+          <span style="font-size:.95rem">Inventaire Compta</span>
+          <span style="font-size:.7rem;font-weight:700;color:var(--gr);background:var(--be);padding:3px 10px;border-radius:10px">Trimestriel</span>
+        </button>
+      </div>
       <div style="background:#f3e5f5;border-radius:10px;padding:10px 14px;font-size:.78rem;color:#7b1fa2;font-weight:600;text-align:center">
         Sauvegarde automatique apres chaque rayon termine
       </div>
@@ -336,9 +357,9 @@ var userRole = '';
 
 // -- RAYONS --
 var RAYONS = [
-  { id:'surgeles', nom:'Surgeles', icon:'\u2744\uFE0F', color:'7b1fa2', bgColor:'ab47bc', unite:'cartons', produits:[] },
-  { id:'frais', nom:'Frais', icon:'\uD83E\uDD57', color:'9c27b0', bgColor:'ce93d8', unite:'unites', produits:[] },
-  { id:'boissons', nom:'Boissons', icon:'\uD83E\uDDCA', color:'6a1b9a', bgColor:'ba68c8', unite:'unites', produits:[] }
+  { id:'surgeles', nom:'Surgeles', icon:'\u2744\uFE0F', color:'1565c0', bgColor:'1e88e5', gradient:'linear-gradient(145deg,#42a5f5,#1565c0)', unite:'cartons', produits:[] },
+  { id:'frais', nom:'Frais', icon:'\uD83E\uDD57', color:'2e7d32', bgColor:'43a047', gradient:'linear-gradient(145deg,#66bb6a,#2e7d32)', unite:'unites', produits:[] },
+  { id:'boissons', nom:'Boissons', icon:'\uD83E\uDDCA', color:'e65100', bgColor:'f57c00', gradient:'linear-gradient(145deg,#ffa726,#e65100)', unite:'unites', produits:[] }
 ];
 
 // -- STATE --
@@ -377,8 +398,8 @@ function updateDateBanner() {
   var opts = {weekday:'long', day:'numeric', month:'long'};
   var h = now.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
   document.getElementById('date-banner').innerHTML =
-    "<span style='font-size:1rem;font-weight:900;color:#e53935;text-transform:capitalize'>" +
-    now.toLocaleDateString('fr-FR', opts) + "</span> <span style='font-size:.95rem;font-weight:800;color:#c62828;margin-left:10px'>" + h + "</span>";
+    "<span style='font-size:.85rem;font-weight:800;color:#7b1fa2;text-transform:capitalize'>" +
+    now.toLocaleDateString('fr-FR', opts) + "</span> <span style='font-size:.85rem;font-weight:800;color:#7b1fa2;margin-left:10px'>" + h + "</span>";
 }
 updateDateBanner();
 setInterval(updateDateBanner, 60000);
@@ -465,51 +486,68 @@ onAuthStateChanged(auth, async function(user) {
 
   // Check wizard completion
   await checkWizard();
+
+  // Render les bulles maintenant que les catalogues sont charges
+  renderBubbles();
 });
 
 // ============================================
 // CHARGER CATALOGUES DEPUIS FIRESTORE
 // ============================================
-async function loadCatalogues() {
-  for (var ri = 0; ri < RAYONS.length; ri++) {
-    var rayon = RAYONS[ri];
-    var type = rayon.id;
+function buildProduits(prods, vjMap, ordreMap, inactifMap) {
+  return prods.map(function(p) {
+    return {
+      id: p.id, nom: p.nom || '',
+      cond: p.conditionnement_nombre || p.cond || null,
+      conditionnement: p.conditionnement || '',
+      vj: vjMap[p.id] !== undefined ? vjMap[p.id] : (p.ventes_jour_defaut || null),
+      ref: p.ref_fournisseur || '',
+      rangStock: ordreMap[p.id] !== undefined ? ordreMap[p.id] : (p.ordre_fournisseur || 999),
+      rangFournisseur: p.ordre_fournisseur || 999,
+      actif: inactifMap[p.id] !== undefined ? inactifMap[p.id] : true,
+      stockMini: p.stock_mini || 0, categorie: p.categorie || ''
+    };
+  }).sort(function(a, b) { return a.rangStock - b.rangStock; });
+}
 
-    // Charger catalogue global
-    var catSnap = await getDocs(collection(db, 'catalogues', type, 'produits'));
-    var prods = catSnap.docs.map(function(d) { return { id: d.id, ...d.data() }; }).filter(function(p) { return p.actif !== false; });
+async function loadOneRayon(rayon) {
+  var type = rayon.id;
+  var cacheKey = 'cat_' + magasinId + '_' + type;
 
-    // Charger config perso du magasin (VJ, ordre stock, inactifs)
+  // Etape 0 : charger depuis le cache localStorage (instantane)
+  try {
+    var cached = JSON.parse(localStorage.getItem(cacheKey));
+    if (cached && cached.produits && cached.produits.length > 0) {
+      rayon.produits = cached.produits;
+      renderBubbles();
+    }
+  } catch(e) {}
+
+  // Etape 1 : charger depuis Firestore (en parallele catalogue + config magasin)
+  try {
+    var results = await Promise.all([
+      getDocs(collection(db, 'catalogues', type, 'produits')),
+      getDocs(collection(db, 'magasins', magasinId, 'config_commande', type, 'ventes_jour')).catch(function() { return {docs:[]}; }),
+      getDocs(collection(db, 'magasins', magasinId, 'config_commande', type, 'ordre_stock')).catch(function() { return {docs:[]}; }),
+      getDocs(collection(db, 'magasins', magasinId, 'config_commande', type, 'produits_inactifs')).catch(function() { return {docs:[]}; })
+    ]);
+
+    var prods = results[0].docs.map(function(d) { return { id: d.id, ...d.data() }; }).filter(function(p) { return p.actif !== false; });
     var vjMap = {}, ordreMap = {}, inactifMap = {};
-    try {
-      var vjSnap = await getDocs(collection(db, 'magasins', magasinId, 'config_commande', type, 'ventes_jour'));
-      vjSnap.docs.forEach(function(d) { vjMap[d.id] = d.data().valeur; });
-      var ordreSnap = await getDocs(collection(db, 'magasins', magasinId, 'config_commande', type, 'ordre_stock'));
-      ordreSnap.docs.forEach(function(d) { ordreMap[d.id] = d.data().rang; });
-      var inactifSnap = await getDocs(collection(db, 'magasins', magasinId, 'config_commande', type, 'produits_inactifs'));
-      inactifSnap.docs.forEach(function(d) { inactifMap[d.id] = d.data().actif; });
-    } catch(e) {}
+    results[1].docs.forEach(function(d) { vjMap[d.id] = d.data().valeur; });
+    results[2].docs.forEach(function(d) { ordreMap[d.id] = d.data().rang; });
+    results[3].docs.forEach(function(d) { inactifMap[d.id] = d.data().actif; });
 
-    // Construire la liste de produits pour ce rayon
-    rayon.produits = prods.map(function(p) {
-      return {
-        id: p.id,
-        nom: p.nom || '',
-        cond: p.conditionnement_nombre || p.cond || null,
-        conditionnement: p.conditionnement || '',
-        vj: vjMap[p.id] !== undefined ? vjMap[p.id] : (p.ventes_jour_defaut || null),
-        ref: p.ref_fournisseur || '',
-        rangStock: ordreMap[p.id] !== undefined ? ordreMap[p.id] : (p.ordre_fournisseur || 999),
-        rangFournisseur: p.ordre_fournisseur || 999,
-        actif: inactifMap[p.id] !== undefined ? inactifMap[p.id] : true,
-        stockMini: p.stock_mini || 0,
-        categorie: p.categorie || ''
-      };
-    });
+    rayon.produits = buildProduits(prods, vjMap, ordreMap, inactifMap);
+    renderBubbles();
 
-    // Tri par ordre stock
-    rayon.produits.sort(function(a, b) { return a.rangStock - b.rangStock; });
-  }
+    // Sauver en cache pour la prochaine fois
+    try { localStorage.setItem(cacheKey, JSON.stringify({produits: rayon.produits, ts: Date.now()})); } catch(e) {}
+  } catch(e) {}
+}
+
+async function loadCatalogues() {
+  await Promise.all(RAYONS.map(function(r) { return loadOneRayon(r); }));
 }
 
 // ============================================
@@ -541,26 +579,14 @@ window.headerBack = function() {
 // BUBBLES
 // ============================================
 function renderBubbles() {
-  var grid = document.getElementById('bubbles-grid');
-  if (!grid) return;
-  var html = '';
+  // Met a jour les badges des bulles statiques (ne reconstruit pas le HTML)
   for (var i = 0; i < RAYONS.length; i++) {
     var r = RAYONS[i];
     var count = r.produits.filter(function(p) { return p.actif !== false; }).length;
     var done = rayonComplet[r.id];
-    html += '<button onclick="ouvrirRayon(\'' + r.id + '\')" class="rayon-bubble' + (done ? ' complet' : '') + '">' +
-      '<span style="font-size:2.5rem">' + r.icon + '</span>' +
-      '<span style="font-weight:800;font-size:1.05rem;color:#7b1fa2;letter-spacing:.3px">' + r.nom + '</span>' +
-      '<span style="font-size:.72rem;font-weight:700;color:' + (done ? '#7b1fa2' : 'var(--gr)') + ';background:' + (done ? '#f3e5f5' : 'var(--be)') + ';padding:3px 10px;border-radius:10px">' + (done ? '\u2713 Termine' : count + ' produits') + '</span>' +
-    '</button>';
+    var badge = document.getElementById('badge-' + r.id);
+    if (badge) badge.textContent = done ? '\u2713 Termine' : count + ' produits';
   }
-  // Bulle Inventaire Comptable (meme design)
-  html += '<button onclick="window.location.href=\'/inventaire-compta.html\'" class="rayon-bubble">' +
-    '<span style="font-size:2.5rem">\uD83D\uDCCA</span>' +
-    '<span style="font-weight:800;font-size:1.05rem;color:#7b1fa2;letter-spacing:.3px">Inventaire Compta</span>' +
-    '<span style="font-size:.72rem;font-weight:700;color:var(--gr);background:var(--be);padding:3px 10px;border-radius:10px">Trimestriel</span>' +
-  '</button>';
-  grid.innerHTML = html;
 }
 
 // ============================================
