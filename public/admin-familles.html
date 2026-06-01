@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Team Connect — Familles Produits</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#9c27b0;--goldl:#ce93d8;--goldbg:#FFF8E7;--brown:#6b4c11;
+  --wh:#fff;--be:#f0e8d8;--gr:#999;
+  --gn:#22c55e;--gnl:#dcfce7;
+  --font:'Nunito',sans-serif;--r:16px;--sh:0 2px 12px rgba(107,76,17,0.08);
+}
+html,body{height:100%;font-family:var(--font);background:var(--goldbg);color:var(--brown);-webkit-tap-highlight-color:transparent}
+button{font-family:var(--font);cursor:pointer;border:none;outline:none}
+input,select{font-family:var(--font);outline:none}
+
+header{background:linear-gradient(160deg,#ab47bc 0%,#9c27b0 50%,#7b1fa2 100%);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 16px rgba(156,39,176,0.3);position:sticky;top:0;z-index:10}
+.hdr-left{display:flex;align-items:center;gap:10px}
+.hdr-left .title{font-size:1.05rem;font-weight:900;color:#fff;line-height:1.2;text-shadow:0 1px 2px rgba(0,0,0,.15)}
+.back-btn{background:none;border:none;font-size:28px;color:#fff;cursor:pointer;width:44px;height:44px;display:flex;align-items:center;justify-content:center;text-decoration:none}
+
+.main{padding:16px;max-width:600px;margin:0 auto;padding-bottom:40px}
+
+/* Login */
+#login-section{display:flex;flex-direction:column;align-items:center;gap:16px;padding:40px 20px}
+#login-section input{width:100%;max-width:320px;padding:14px 16px;border:2px solid var(--be);border-radius:var(--r);font-size:1rem;background:var(--wh)}
+#login-section input:focus{border-color:#9c27b0}
+#login-section button{background:linear-gradient(145deg,#ab47bc,#7b1fa2);color:#fff;font-weight:800;font-size:1rem;padding:14px 24px;border-radius:var(--r);width:100%;max-width:320px;box-shadow:0 4px 0 #6a1b9a}
+#login-section button:active{transform:translateY(2px);box-shadow:0 2px 0 #6a1b9a}
+#login-error{color:#e53935;font-size:.85rem;font-weight:700}
+
+/* Tabs */
+.tabs{display:flex;gap:8px;margin-bottom:16px}
+.tab-btn{flex:1;padding:12px 8px;border-radius:14px;background:var(--wh);border:2px solid var(--be);font-weight:800;font-size:.9rem;color:var(--brown);text-align:center;box-shadow:0 2px 0 rgba(107,76,17,.08);transition:all .15s}
+.tab-btn:active{transform:translateY(2px);box-shadow:none}
+.tab-btn.active{background:linear-gradient(145deg,#ab47bc,#9c27b0);border-color:#9c27b0;color:#fff;box-shadow:0 4px 0 #6a1b9a}
+
+/* Counter */
+.counter{text-align:center;font-weight:800;font-size:.95rem;color:var(--brown);margin-bottom:14px;padding:10px;background:var(--wh);border-radius:var(--r);box-shadow:var(--sh)}
+.counter .num{color:#9c27b0}
+
+/* Product list */
+.prod-list{display:flex;flex-direction:column;gap:6px}
+.prod-row{background:var(--wh);border-radius:12px;padding:10px 12px;box-shadow:var(--sh);display:flex;align-items:center;gap:10px}
+.prod-info{flex:1;min-width:0}
+.prod-name{font-weight:700;font-size:.88rem;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prod-meta{font-size:.72rem;color:var(--gr);font-weight:600;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prod-select{width:150px;flex-shrink:0;padding:8px 6px;border:2px solid var(--be);border-radius:10px;font-size:.78rem;font-weight:700;color:var(--brown);background:var(--wh);-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%236b4c11' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;transition:border-color .3s}
+.prod-select:focus{border-color:#9c27b0}
+.prod-select.saved{border-color:var(--gn)!important}
+
+/* Loading */
+.loading{text-align:center;padding:40px;font-weight:700;color:var(--gr)}
+
+@media(max-width:400px){
+  .prod-select{width:130px;font-size:.72rem}
+  .prod-name{font-size:.82rem}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr-left">
+    <a href="commande.html" class="back-btn">←</a>
+    <div class="title">🏷️ Familles Produits</div>
+  </div>
+</header>
+
+<!-- Login -->
+<div id="login-section" style="display:none">
+  <div style="font-size:2rem">🔒</div>
+  <div style="font-weight:800;font-size:1.1rem">Connexion requise</div>
+  <input type="email" id="login-email" placeholder="Email">
+  <input type="password" id="login-pass" placeholder="Mot de passe">
+  <button onclick="doLogin()">Se connecter</button>
+  <div id="login-error"></div>
+</div>
+
+<!-- App -->
+<div id="app-section" style="display:none">
+  <div class="main">
+    <div class="tabs">
+      <button class="tab-btn active" data-type="surgeles" onclick="switchTab('surgeles',this)">🧊 Surgelés</button>
+      <button class="tab-btn" data-type="frais" onclick="switchTab('frais',this)">🥗 Frais</button>
+      <button class="tab-btn" data-type="boissons" onclick="switchTab('boissons',this)">🥤 Boissons</button>
+    </div>
+    <div class="counter" id="counter">—</div>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button id="btn-prefill" onclick="prefillFamilies()" style="flex:1;padding:12px;border-radius:14px;background:linear-gradient(145deg,#f3e5f5,#e9d5ff);color:#7b1fa2;font-weight:900;font-size:.9rem;border:2px solid #ce93d8;font-family:var(--font);cursor:pointer">&#x2728; Pre-remplir</button>
+      <button id="btn-dedup" onclick="removeDuplicates()" style="padding:12px 16px;border-radius:14px;background:var(--wh);color:#e53935;font-weight:900;font-size:.9rem;border:2px solid #fecaca;font-family:var(--font);cursor:pointer">&#x1F5D1; Doublons</button>
+    </div>
+    <div class="prod-list" id="prod-list">
+      <div class="loading">Chargement...</div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import{getAuth,onAuthStateChanged,signInWithEmailAndPassword}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import{getFirestore,collection,getDocs,doc,updateDoc,deleteDoc}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const app=initializeApp({
+  apiKey:'AIzaSyAHNdciMVNz15NoAXfc7yi9q4EnQJW8PKE',
+  authDomain:'teamconnect-valence-2026.firebaseapp.com',
+  projectId:'teamconnect-valence-2026'
+});
+const auth=getAuth(app);
+const db=getFirestore(app);
+
+const FAMILIES={
+  surgeles:['PAINS','SANDWICH','VIENNOISERIES','PATISSERIES','VIANDES','TRAITEUR','DIVERS'],
+  frais:['INGREDIENT SANDWICH','CAFE & BOISSONS CHAUDES','FINITION','PATISSERIE','GLACES & GRANITES','EPICERIE','EMBALLAGES'],
+  boissons:['BOISSONS','CONFISERIES']
+};
+
+let currentType='surgeles';
+let cache={};
+
+// Auth
+onAuthStateChanged(auth,user=>{
+  if(user){
+    document.getElementById('login-section').style.display='none';
+    document.getElementById('app-section').style.display='block';
+    loadProducts(currentType);
+  }else{
+    document.getElementById('login-section').style.display='flex';
+    document.getElementById('app-section').style.display='none';
+  }
+});
+
+window.doLogin=async function(){
+  const email=document.getElementById('login-email').value.trim();
+  const pass=document.getElementById('login-pass').value;
+  const err=document.getElementById('login-error');
+  err.textContent='';
+  try{
+    await signInWithEmailAndPassword(auth,email,pass);
+  }catch(e){
+    err.textContent='Email ou mot de passe incorrect';
+  }
+};
+
+window.switchTab=function(type,btn){
+  currentType=type;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  loadProducts(type);
+};
+
+async function loadProducts(type){
+  const list=document.getElementById('prod-list');
+  const counter=document.getElementById('counter');
+  list.innerHTML='<div class="loading">Chargement...</div>';
+  counter.textContent='—';
+
+  try{
+    if(!cache[type]){
+      const snap=await getDocs(collection(db,'catalogues',type,'produits'));
+      const prods=[];
+      snap.forEach(d=>{
+        prods.push({id:d.id,...d.data()});
+      });
+      cache[type]=prods;
+    }
+
+    const prods=[...cache[type]];
+    prods.sort((a,b)=>(a.ordre_fournisseur||9999)-(b.ordre_fournisseur||9999));
+
+    const families=FAMILIES[type]||[];
+    const assigned=prods.filter(p=>p.categorie&&p.categorie!=='').length;
+    counter.innerHTML=`<span class="num">${assigned}</span> / ${prods.length} produits assignés`;
+
+    if(!prods.length){
+      list.innerHTML='<div class="loading">Aucun produit</div>';
+      return;
+    }
+
+    list.innerHTML='';
+    prods.forEach(p=>{
+      const row=document.createElement('div');
+      row.className='prod-row';
+
+      const info=document.createElement('div');
+      info.className='prod-info';
+      const name=document.createElement('div');
+      name.className='prod-name';
+      name.textContent=p.nom||p.id;
+      info.appendChild(name);
+
+      const meta=document.createElement('div');
+      meta.className='prod-meta';
+      const parts=[];
+      if(p.ref_fournisseur)parts.push(p.ref_fournisseur);
+      if(p.conditionnement)parts.push(p.conditionnement);
+      meta.textContent=parts.join(' · ')||'';
+      info.appendChild(meta);
+
+      const sel=document.createElement('select');
+      sel.className='prod-select';
+      const emptyOpt=document.createElement('option');
+      emptyOpt.value='';
+      emptyOpt.textContent='— Famille —';
+      sel.appendChild(emptyOpt);
+
+      families.forEach(f=>{
+        const opt=document.createElement('option');
+        opt.value=f;
+        opt.textContent=f;
+        if(p.categorie===f)opt.selected=true;
+        sel.appendChild(opt);
+      });
+
+      sel.addEventListener('change',async()=>{
+        const val=sel.value;
+        try{
+          await updateDoc(doc(db,'catalogues',type,'produits',p.id),{categorie:val});
+          // Update cache
+          const cached=cache[type].find(x=>x.id===p.id);
+          if(cached)cached.categorie=val;
+          // Update counter
+          const total=cache[type].length;
+          const assigned2=cache[type].filter(x=>x.categorie&&x.categorie!=='').length;
+          counter.innerHTML=`<span class="num">${assigned2}</span> / ${total} produits assignés`;
+          // Green flash
+          sel.classList.add('saved');
+          setTimeout(()=>sel.classList.remove('saved'),1200);
+        }catch(e){
+          console.error('Save error',e);
+          sel.style.borderColor='#e53935';
+          setTimeout(()=>sel.style.borderColor='',1500);
+        }
+      });
+
+      row.appendChild(info);
+      row.appendChild(sel);
+      list.appendChild(row);
+    });
+  }catch(e){
+    console.error(e);
+    list.innerHTML='<div class="loading">Erreur de chargement</div>';
+  }
+}
+
+// =====================
+// PRE-REMPLIR AUTO
+// =====================
+function guessFamily(p, type) {
+  var nom = (p.nom || '').toUpperCase();
+  var code = (p.code || p.id || '').toUpperCase();
+
+  if (type === 'surgeles') {
+    // SANDWICH : dejeunettes, ciabatta, calinis, croques
+    if (nom.indexOf('DEJEUNETTE') > -1 && (nom.indexOf('SANDWICH') > -1 || nom.indexOf('BAGUETTE') > -1 || nom.indexOf('LINS') > -1 || nom.indexOf('MAIS') > -1 || nom.indexOf('NORDIQUE') > -1 || nom.indexOf('PAIN DE MIE') > -1)) return 'SANDWICH';
+    if (nom.indexOf('DEJEUNETTE') > -1) return 'SANDWICH';
+    if (nom.indexOf('CIABATTA') > -1) return 'SANDWICH';
+    if (nom.indexOf('CALINI') > -1) return 'SANDWICH';
+    if (nom.indexOf('CROQUE') > -1 || nom.indexOf("CROQ'") > -1) return 'SANDWICH';
+    // Par code
+    if (code.match(/^11/)) return 'PAINS';
+    if (code.match(/^12/)) return 'VIENNOISERIES';
+    if (code.match(/^14/)) return 'PATISSERIES';
+    if (code.match(/^21/)) return 'VIANDES';
+    if (code.match(/^22/)) return 'TRAITEUR';
+    if (code.match(/^80/)) return 'DIVERS';
+    return '';
+  }
+
+  if (type === 'frais') {
+    // INGREDIENT SANDWICH
+    if (nom.indexOf('EMINCE POULET') > -1 || nom.indexOf('JAMBON') > -1 || nom.indexOf('ROSETTE') > -1 ||
+        nom.indexOf('CHORIZO') > -1 || nom.indexOf('SAUMON') > -1 || nom.indexOf('THON') > -1) return 'INGREDIENT SANDWICH';
+    if (nom.indexOf('MOZZARELLA') > -1 || nom.indexOf('CHEDDAR') > -1 || nom.indexOf('EMMENTAL') > -1 ||
+        nom.indexOf('FETA') > -1 || nom.indexOf('CAMEMBERT') > -1 || nom.indexOf('BREBIS') > -1 ||
+        nom.indexOf('PECORINO') > -1 || nom.indexOf('LOIK') > -1) return 'INGREDIENT SANDWICH';
+    if (nom.indexOf('SAUCE CAESAR') > -1 || nom.indexOf('SAUCE CURRY') > -1 || nom.indexOf('SAUCE MOUTARD') > -1 ||
+        nom.indexOf('MAYONNAISE') > -1 || nom.indexOf('PESTO') > -1 || nom.indexOf('VINAIGRETTE') > -1 ||
+        nom.indexOf('TZATZIKI') > -1 || nom.indexOf('CREAMY') > -1) return 'INGREDIENT SANDWICH';
+    if (nom.indexOf('FALAFEL') > -1 || nom.indexOf('POIVRON') > -1 || nom.indexOf('TOMATES SEMI') > -1 ||
+        nom.indexOf('TABOULE') > -1 || nom.indexOf('MINI PENNE') > -1 || nom.indexOf('RIZ ') > -1 ||
+        nom.indexOf('GALETTE DE BLE') > -1 || nom.indexOf('OEUF') > -1 || nom.indexOf('CORNICHON') > -1) return 'INGREDIENT SANDWICH';
+    // CAFE & BOISSONS CHAUDES
+    if (nom.indexOf('CAFE') > -1 || nom.indexOf('THE ') > -1 || nom.indexOf('INFUSION') > -1 ||
+        nom.indexOf('CHAI LATTE') > -1 || nom.indexOf('MATCHA') > -1 || nom.indexOf('CHOCOLAT BEVANDA') > -1 ||
+        nom.indexOf('SUCRE BUCHETTE') > -1 || nom.indexOf('LAIT POUDRE') > -1 || nom.indexOf('LAIT 1/2') > -1 ||
+        nom.indexOf('SIROP') > -1 || nom.indexOf('SAUCE CARAMEL') > -1 || nom.indexOf('SAUCE CHOCOLAT') > -1 ||
+        nom.indexOf('SPATULE') > -1 || nom.indexOf('GOBELET') > -1 || nom.indexOf('COUVERCLE GOBELET') > -1 ||
+        nom.indexOf('JUS DE POMME') > -1) return 'CAFE & BOISSONS CHAUDES';
+    // FINITION (graines, cereales, decors, matieres premieres)
+    if (code.match(/^111/)) return 'FINITION';
+    if (nom.indexOf('COMPOTE') > -1 || nom.indexOf('CREME DE MARRON') > -1 || nom.indexOf('DECOR') > -1 ||
+        nom.indexOf('COPEAUX') > -1 || nom.indexOf('NOIX DE PECAN') > -1) return 'FINITION';
+    if (code.match(/^14/)) return 'FINITION';
+    if (nom.indexOf('FARINE') > -1 || nom.indexOf('SUCRE') > -1 || nom.indexOf('AMANDES') > -1 ||
+        nom.indexOf('GRAINES') > -1 || nom.indexOf('NAPPAGE') > -1 || nom.indexOf('NEIGE DECOR') > -1 ||
+        nom.indexOf('NOISETTE') > -1 || nom.indexOf('PISTACHE') > -1 || nom.indexOf('POLENTA') > -1 ||
+        nom.indexOf('SPECULOOS') > -1 || nom.indexOf('DAIM') > -1 || nom.indexOf('MERINGUE') > -1 ||
+        nom.indexOf('CHIPS DE BANANE') > -1 || nom.indexOf('FLOCONS') > -1 || nom.indexOf('HUILE') > -1 ||
+        nom.indexOf('MELANGE GRAINE') > -1 || nom.indexOf('POP CORN') > -1 || nom.indexOf('CREMEUX') > -1 ||
+        nom.indexOf('PATE A GLACER') > -1 || nom.indexOf('PAT BONNE') > -1 || nom.indexOf('CHANTILLY') > -1 ||
+        nom.indexOf('COULIS') > -1) return 'FINITION';
+    if (code.match(/^81/)) return 'FINITION';
+    // GLACES & GRANITES
+    if (nom.indexOf('GRANITE') > -1 || nom.indexOf('MIX GLACE') > -1 || nom.indexOf('CORNET GLACE') > -1 ||
+        nom.indexOf('POT A GLACE') > -1) return 'GLACES & GRANITES';
+    if (code.match(/^33/)) return 'GLACES & GRANITES';
+    // EMBALLAGES
+    if (nom.indexOf('BOITE') > -1 || nom.indexOf('SAC ') > -1 || nom.indexOf('SACS ') > -1 ||
+        nom.indexOf('POCHE') > -1 || nom.indexOf('SACHET') > -1 || nom.indexOf('SEMELLE') > -1 ||
+        nom.indexOf('PLATEAU') > -1 || nom.indexOf('SERVIETTE') > -1 || nom.indexOf('STICKER') > -1 ||
+        nom.indexOf('FILM') > -1 || nom.indexOf('FEUILLE') > -1 || nom.indexOf('PAPIER') > -1 ||
+        nom.indexOf('CAISS') > -1 || nom.indexOf('CARRE RAINE') > -1 || nom.indexOf('RECTANGLE RAINE') > -1 ||
+        nom.indexOf('ROND GRIS') > -1 || nom.indexOf('COUTEAU') > -1 || nom.indexOf('CUILLERE') > -1 ||
+        nom.indexOf('FOURCHETTE') > -1 || nom.indexOf('PAILLE') > -1 || nom.indexOf('MOULE COOKIE') > -1 ||
+        nom.indexOf('PORTE 2 GOBELET') > -1 || nom.indexOf('POT CARTON') > -1 || nom.indexOf('POT DESSERT') > -1 ||
+        nom.indexOf('COUVERCLE POT') > -1 || nom.indexOf('BOUTEILLE') > -1) return 'EMBALLAGES';
+    if (code.match(/^84/)) return 'EMBALLAGES';
+    // EPICERIE (le reste)
+    if (nom.indexOf('CHIPS') > -1 || nom.indexOf('BEURRE') > -1 || nom.indexOf('FROMAGE BLANC') > -1 ||
+        nom.indexOf('ORIGAN') > -1 || nom.indexOf('GRANOLA') > -1) return 'EPICERIE';
+    if (code.match(/^80/)) return 'EPICERIE';
+    return '';
+  }
+
+  if (type === 'boissons') {
+    if (nom.indexOf('HARIBO') > -1 || nom.indexOf('KINDER') > -1 || nom.indexOf('SUCETTE') > -1 || nom.indexOf('CHUPA') > -1) return 'CONFISERIES';
+    if (code.match(/^32/)) return 'CONFISERIES';
+    return 'BOISSONS';
+  }
+
+  return '';
+}
+
+window.prefillFamilies = async function() {
+  if (!cache[currentType] || !cache[currentType].length) { alert('Chargez d\'abord les produits'); return; }
+  var prods = cache[currentType];
+  var btn = document.getElementById('btn-prefill');
+  btn.disabled = true; btn.textContent = 'En cours...';
+
+  var count = 0;
+  for (var i = 0; i < prods.length; i++) {
+    var p = prods[i];
+    var fam = guessFamily(p, currentType);
+    if (!fam) continue;
+    try {
+      await updateDoc(doc(db, 'catalogues', currentType, 'produits', p.id), { categorie: fam });
+      p.categorie = fam;
+      count++;
+    } catch(e) { console.error(e); }
+  }
+
+  btn.disabled = false; btn.textContent = '\u2728 Pre-remplir auto (' + count + ' assignes)';
+  setTimeout(function() { btn.textContent = '\u2728 Pre-remplir auto'; }, 2000);
+  // Refresh display
+  delete cache[currentType];
+  cache[currentType] = prods;
+  loadProducts(currentType);
+};
+
+// =====================
+// SUPPRIMER DOUBLONS
+// =====================
+window.removeDuplicates = async function() {
+  if (!cache[currentType]) { alert('Chargez d\'abord les produits'); return; }
+  var btn = document.getElementById('btn-dedup');
+  btn.disabled = true; btn.textContent = 'Recherche...';
+
+  var prods = cache[currentType];
+  var seen = {}; // nom → premier produit
+  var toDelete = [];
+
+  for (var i = 0; i < prods.length; i++) {
+    var p = prods[i];
+    var key = (p.nom || '').toUpperCase().trim();
+    if (!key) continue;
+    if (seen[key]) {
+      // Doublon trouvé — garder celui qui a le plus d'infos (categorie remplie)
+      var existing = seen[key];
+      if (p.categorie && !existing.categorie) {
+        // Le doublon a plus d'infos, supprimer l'ancien
+        toDelete.push(existing.id);
+        seen[key] = p;
+      } else {
+        toDelete.push(p.id);
+      }
+    } else {
+      seen[key] = p;
+    }
+  }
+
+  if (toDelete.length === 0) {
+    btn.disabled = false; btn.textContent = '\u2713 Aucun doublon';
+    setTimeout(function() { btn.textContent = '\u{1F5D1} Doublons'; }, 2000);
+    return;
+  }
+
+  if (!confirm(toDelete.length + ' doublon(s) trouve(s). Supprimer ?')) {
+    btn.disabled = false; btn.textContent = '\u{1F5D1} Doublons';
+    return;
+  }
+
+  var count = 0;
+  for (var d = 0; d < toDelete.length; d++) {
+    try {
+      await deleteDoc(doc(db, 'catalogues', currentType, 'produits', toDelete[d]));
+      count++;
+    } catch(e) { console.error(e); }
+  }
+
+  btn.disabled = false; btn.textContent = count + ' supprime(s)';
+  setTimeout(function() { btn.textContent = '\u{1F5D1} Doublons'; }, 2000);
+  // Refresh
+  delete cache[currentType];
+  loadProducts(currentType);
+};
+</script>
+</body>
+</html>

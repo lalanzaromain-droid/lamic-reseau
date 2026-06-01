@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Historique commandes</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="header">
+    <div>
+      <button class="header-btn" onclick="location.href='accueil.html'">&larr; Retour</button>
+    </div>
+    <h1>Historique</h1>
+  </div>
+
+  <div class="container">
+    <!-- Filtres par type -->
+    <div class="tabs">
+      <button class="tab active" data-filter="tous">Tous</button>
+      <button class="tab" data-filter="surgeles">Surgeles</button>
+      <button class="tab" data-filter="frais">Frais</button>
+      <button class="tab" data-filter="boissons">Boissons</button>
+    </div>
+
+    <div id="histo-list">
+      <p style="text-align:center;color:var(--text-light);padding:40px 0;">Chargement...</p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { requireAuth, getMagasinId } from './js/auth.js';
+    import { getCommandes } from './js/firestore.js';
+    import { showLoader, hideLoader } from './js/ui.js';
+
+    let allCommandes = [];
+    let currentFilter = 'tous';
+
+    // Filtres
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        currentFilter = tab.dataset.filter;
+        renderList();
+      });
+    });
+
+    requireAuth(async (user, userData) => {
+      const magasinId = userData?.magasinId;
+      if (!magasinId) {
+        document.getElementById('histo-list').innerHTML = '<p style="text-align:center;padding:40px">Magasin non configure</p>';
+        return;
+      }
+
+      showLoader();
+      allCommandes = await getCommandes(magasinId, 100);
+      hideLoader();
+      renderList();
+    });
+
+    function renderList() {
+      const list = document.getElementById('histo-list');
+      const filtered = currentFilter === 'tous'
+        ? allCommandes
+        : allCommandes.filter(c => c.type === currentFilter);
+
+      if (filtered.length === 0) {
+        list.innerHTML = '<p style="text-align:center;color:var(--text-light);padding:40px 0;">Aucune commande</p>';
+        return;
+      }
+
+      list.innerHTML = filtered.map(c => {
+        const date = c.createdAt?.toDate ? c.createdAt.toDate().toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }) : c.date || '—';
+        const nbProduits = c.lignes?.filter(l => l.a_commander > 0).length || 0;
+        const totalQty = c.lignes?.reduce((s, l) => s + (l.a_commander || 0), 0) || 0;
+        return `
+          <div class="histo-item" onclick="location.href='commande.html?id=${c.id}&type=${c.type}&mode=lecture'">
+            <div>
+              <div class="histo-date">${date}</div>
+              <div style="font-size:0.8rem;color:var(--text-light)">${nbProduits} ref. &middot; ${totalQty} unites</div>
+            </div>
+            <span class="histo-type ${c.type}">${c.type}</span>
+          </div>
+        `;
+      }).join('');
+    }
+  </script>
+</body>
+</html>

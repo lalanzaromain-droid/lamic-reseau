@@ -1,0 +1,127 @@
+<!DOCTYPE html><html lang="fr"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Export Rangs Stock</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f0ff;min-height:100vh}
+header{background:linear-gradient(160deg,#ab47bc,#7b1fa2);padding:16px 20px;color:#fff;text-align:center}
+header h1{font-size:1.1rem}
+.wrap{max-width:500px;margin:20px auto;padding:0 16px}
+.card{background:#fff;border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+.btn{display:block;width:100%;padding:14px;border:none;border-radius:12px;font-size:.95rem;font-weight:800;cursor:pointer;margin-bottom:10px;font-family:inherit}
+.btn-dl{background:linear-gradient(145deg,#ab47bc,#7b1fa2);color:#fff}
+.btn-dl:disabled{background:#ccc;color:#999}
+.status{font-size:.8rem;color:#666;margin-top:6px;min-height:20px}
+.count{display:inline-block;background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:8px;font-weight:700;font-size:.8rem}
+</style>
+</head><body>
+<header><h1>Export listes stock → CSV</h1></header>
+<div class="wrap">
+  <div class="card">
+    <p style="font-size:.85rem;color:#555;margin-bottom:14px">Lit les rangStock depuis la RTDB (app inventaire actuelle) et génère des CSV prêts à importer dans le nouveau module commande.</p>
+    <div id="status-load" class="status">Chargement...</div>
+  </div>
+
+  <div class="card">
+    <button class="btn btn-dl" id="btn-surgeles" disabled onclick="downloadCSV('surgeles')">❄️ Télécharger Surgelés</button>
+    <div class="status" id="st-surgeles"></div>
+  </div>
+  <div class="card">
+    <button class="btn btn-dl" id="btn-frais" disabled onclick="downloadCSV('frais')">🥗 Télécharger Frais</button>
+    <div class="status" id="st-frais"></div>
+  </div>
+  <div class="card">
+    <button class="btn btn-dl" id="btn-boissons" disabled onclick="downloadCSV('boissons')">🧃 Télécharger Boissons</button>
+    <div class="status" id="st-boissons"></div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app-check.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+
+var fApp = initializeApp({
+  apiKey:"AIzaSyAHNdciMVNz15NoAXfc7yi9q4EnQJW8PKE",
+  authDomain:"teamconnect-valence-2026.firebaseapp.com",
+  projectId:"teamconnect-valence-2026",
+  databaseURL:"https://teamconnect-valence-2026-default-rtdb.europe-west1.firebasedatabase.app"
+});
+initializeAppCheck(fApp, { provider: new ReCaptchaV3Provider('6LcCmfMsAAAAAIORt9Br0MbH8Y6Cjqe7TV-hw6HH'), isTokenAutoRefreshEnabled: true });
+var auth = getAuth(fApp);
+var db = getDatabase(fApp);
+
+var rayonData = {};
+
+var RAYONS_MAP = {
+  surgeles: { path: 'inventaire_produits', label: 'Surgelés' },
+  frais: { path: 'inventaire_frais', label: 'Frais' },
+  boissons: { path: 'inventaire_metro', label: 'Boissons' }
+};
+
+onAuthStateChanged(auth, function(user) {
+  if (!user) {
+    document.getElementById('status-load').textContent = '⚠️ Non connecté. Ouvrez inventaire.html d\'abord pour vous authentifier.';
+    return;
+  }
+  document.getElementById('status-load').textContent = '✅ Connecté: ' + user.email;
+  loadAll();
+});
+
+function loadAll() {
+  var ids = ['surgeles', 'frais', 'boissons'];
+  ids.forEach(function(id) {
+    var cfg = RAYONS_MAP[id];
+    get(ref(db, cfg.path + '/produits')).then(function(snap) {
+      var data = snap.val();
+      if (!data) { document.getElementById('st-' + id).textContent = 'Aucune donnée'; return; }
+      var prods = [];
+      var keys = Object.keys(data);
+      for (var i = 0; i < keys.length; i++) {
+        var v = data[keys[i]];
+        if (typeof v !== 'object' || !v.nom) continue;
+        if (v.actif === false) continue;
+        var rs = v.rangStock || 0;
+        if (rs <= 0) continue;
+        prods.push({
+          id: keys[i],
+          nom: (v.nom || '').replace(/\s*x\s*\d+\s*$/i, ''),
+          code: v.code || keys[i],
+          cond: (v.conditionnement || v.cond || '').toString(),
+          rangStock: rs,
+          rangFournisseur: v.rangFournisseur || 0
+        });
+      }
+      prods.sort(function(a, b) { return a.rangFournisseur - b.rangFournisseur; });
+      rayonData[id] = prods;
+      document.getElementById('st-' + id).innerHTML = '<span class="count">' + prods.length + ' produits actifs avec rang</span>';
+      document.getElementById('btn-' + id).disabled = false;
+    }).catch(function(e) {
+      document.getElementById('st-' + id).textContent = '❌ Erreur: ' + e.message;
+    });
+  });
+}
+
+window.downloadCSV = function(id) {
+  var prods = rayonData[id];
+  if (!prods || prods.length === 0) return;
+  var sep = ';';
+  var lines = ['Rang fournisseur' + sep + 'Code' + sep + 'Nom' + sep + 'Conditionnement' + sep + 'Nouveau rang'];
+  for (var i = 0; i < prods.length; i++) {
+    var p = prods[i];
+    lines.push(p.rangFournisseur + sep + p.code.replace(/;/g, ',') + sep + p.nom.replace(/;/g, ',') + sep + p.cond.replace(/;/g, ',') + sep + p.rangStock);
+  }
+  var csv = '\uFEFF' + lines.join('\n');
+  var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'ordre_stock_' + id + '.csv';
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function() { document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
+};
+</script>
+</body></html>

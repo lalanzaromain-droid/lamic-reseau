@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Comptage stock</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="header">
+    <div>
+      <button class="header-btn" onclick="location.href='accueil.html'">&larr; Retour</button>
+    </div>
+    <div style="text-align:right">
+      <h1 id="page-title">Comptage</h1>
+      <div class="subtitle" id="page-subtitle"></div>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Jours à tenir -->
+    <div class="jours-selector">
+      <label>Jours a tenir :</label>
+      <input type="number" id="jours-input" min="1" max="14" value="3">
+      <span style="font-size:0.85rem;color:var(--text-light)">jours</span>
+    </div>
+
+    <!-- Liste produits -->
+    <div class="card" style="padding:0;overflow:hidden">
+      <div id="produits-list"></div>
+    </div>
+
+    <!-- Bouton valider -->
+    <button class="btn btn-primary btn-full" id="btn-valider" style="margin-top:12px">
+      Valider comptage
+    </button>
+  </div>
+
+  <script type="module">
+    import { requireAuth, getMagasinId } from './js/auth.js';
+    import { getCatalogue, getOrdreStock, setOrdreStock, getVentesJourPerso, getJoursATenir, setJoursATenir } from './js/firestore.js';
+    import { initDragDrop, showToast, showLoader, hideLoader } from './js/ui.js';
+
+    const params = new URLSearchParams(location.search);
+    const type = params.get('type') || 'surgeles';
+
+    const titres = { surgeles: 'Surgeles', frais: 'Frais', boissons: 'Boissons' };
+    const icons = { surgeles: '&#10052;', frais: '&#129388;', boissons: '&#129380;' };
+
+    document.getElementById('page-title').innerHTML = `${icons[type] || ''} ${titres[type] || type}`;
+    document.getElementById('page-subtitle').textContent = 'Comptez votre stock';
+    document.title = `Comptage ${titres[type] || type}`;
+
+    let produits = [];
+    let magasinId = null;
+
+    requireAuth(async (user, userData) => {
+      magasinId = userData?.magasinId;
+      if (!magasinId) {
+        document.getElementById('produits-list').innerHTML = '<p style="padding:20px;text-align:center">Magasin non configure</p>';
+        return;
+      }
+      showLoader();
+      await loadProduits();
+      hideLoader();
+    });
+
+    async function loadProduits() {
+      // Charger catalogue + ordre perso + ventes perso
+      const [catalogue, ordreStock, ventesPerso, jours] = await Promise.all([
+        getCatalogue(type),
+        getOrdreStock(magasinId, type),
+        getVentesJourPerso(magasinId, type),
+        getJoursATenir(magasinId, type)
+      ]);
+
+      document.getElementById('jours-input').value = jours;
+
+      // Fusionner et trier
+      produits = catalogue
+        .filter(p => p.actif !== false)
+        .map(p => ({
+          ...p,
+          ventes_jour: ventesPerso[p.id] ?? p.ventes_jour_defaut ?? 0,
+          rang: ordreStock[p.id] ?? p.ordre_fournisseur ?? 999,
+          stock: ''
+        }))
+        .sort((a, b) => a.rang - b.rang);
+
+      renderProduits();
+    }
+
+    function renderProduits() {
+      const list = document.getElementById('produits-list');
+      if (produits.length === 0) {
+        list.innerHTML = '<p style="padding:20px;text-align:center;color:var(--text-light)">Aucun produit dans le catalogue</p>';
+        return;
+      }
+
+      list.innerHTML = produits.map((p, i) => `
+        <div class="produit-ligne drag-item" data-id="${p.id}" data-index="${i}">
+          <div class="drag-handle">&#9776;</div>
+          <div style="flex:1">
+            <div class="produit-nom">${p.nom}</div>
+            <div class="produit-meta">${p.conditionnement || ''} &middot; ${p.ventes_jour}/j</div>
+          </div>
+          <input type="number" inputmode="numeric" placeholder="0"
+                 data-id="${p.id}" class="stock-input"
+                 min="0" step="1">
+        </div>
+      `).join('');
+
+      // Init drag & drop
+      initDragDrop(list, async (ids) => {
+        // Sauvegarder le nouvel ordre
+        const ordreMap = {};
+        ids.forEach((id, i) => { ordreMap[id] = i; });
+        // Mettre à jour l'ordre local
+        produits.sort((a, b) => (ordreMap[a.id] ?? 999) - (ordreMap[b.id] ?? 999));
+        try {
+          await setOrdreStock(magasinId, type, ordreMap);
+          showToast('Ordre sauvegarde');
+        } catch (e) {
+          showToast('Erreur sauvegarde ordre');
+        }
+      });
+    }
+
+    // Jours à tenir : sauvegarder au changement
+    document.getElementById('jours-input').addEventListener('change', async (e) => {
+      const jours = parseInt(e.target.value) || 3;
+      if (magasinId) {
+        await setJoursATenir(magasinId, type, jours);
+        showToast(`${jours} jours a tenir`);
+      }
+    });
+
+    // Valider comptage → passer en vue commande
+    document.getElementById('btn-valider').addEventListener('click', () => {
+      const jours = parseInt(document.getElementById('jours-input').value) || 3;
+
+      // Lire les stocks saisis
+      const stocks = {};
+      document.querySelectorAll('.stock-input').forEach(input => {
+        const val = parseInt(input.value);
+        if (!isNaN(val)) stocks[input.dataset.id] = val;
+      });
+
+      // Stocker en sessionStorage pour la page commande
+      const data = {
+        type,
+        jours,
+        produits: produits.map(p => ({
+          id: p.id,
+          nom: p.nom,
+          ref_fournisseur: p.ref_fournisseur || '',
+          conditionnement: p.conditionnement || '',
+          ventes_jour: p.ventes_jour,
+          ordre_fournisseur: p.ordre_fournisseur ?? 999,
+          stock: stocks[p.id] ?? 0
+        }))
+      };
+
+      sessionStorage.setItem('comptage_data', JSON.stringify(data));
+      location.href = `commande.html?type=${type}`;
+    });
+  </script>
+</body>
+</html>

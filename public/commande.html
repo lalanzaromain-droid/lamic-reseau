@@ -1,0 +1,2454 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Team Connect — Inventaire & Commandes</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#9c27b0;--goldl:#ce93d8;--goldbg:#FFF8E7;--brown:#6b4c11;
+  --wh:#fff;--be:#f0e8d8;--gr:#999;--grl:#f3f4f6;
+  --re:#e53935;--rel:#ffebee;
+  --gn:#22c55e;--gnl:#dcfce7;
+  --or:#f97316;--orl:#ffedd5;
+  --bl:#3b82f6;--bll:#dbeafe;
+  --font:'Nunito',sans-serif;--r:16px;--sh:0 2px 12px rgba(107,76,17,0.08);
+}
+html,body{height:100%;font-family:var(--font);background:var(--goldbg);color:var(--brown);-webkit-tap-highlight-color:transparent}
+button{font-family:var(--font);cursor:pointer;border:none;outline:none}
+input,select{font-family:var(--font);outline:none}
+
+header{background:linear-gradient(160deg,#ab47bc 0%,#9c27b0 50%,#7b1fa2 100%);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 16px rgba(156,39,176,0.3);position:sticky;top:0;z-index:10}
+.hdr-left{display:flex;align-items:center;gap:10px}
+.hdr-left .logo{font-size:1.6rem;filter:drop-shadow(0 2px 4px rgba(0,0,0,.15))}
+.hdr-left .name{font-size:.6rem;font-weight:700;color:rgba(255,255,255,.6);line-height:1;letter-spacing:1px;text-transform:uppercase}
+.hdr-left .title{font-size:1.05rem;font-weight:900;color:#fff;line-height:1.2;text-shadow:0 1px 2px rgba(0,0,0,.15)}
+.back-btn{background:none;border:none;font-size:28px;color:#fff;cursor:pointer;width:44px;height:44px;display:flex;align-items:center;justify-content:center}
+
+.main{padding:16px;max-width:600px;margin:0 auto;padding-bottom:40px}
+@media(min-width:768px){.main{max-width:95%;padding:16px 24px}}
+.card{background:var(--wh);border-radius:var(--r);box-shadow:var(--sh);padding:16px;margin-bottom:14px}
+
+/* Tabs */
+.tabs{display:flex;gap:8px;margin-bottom:16px}
+.tab-btn{flex:1;padding:14px 8px;border-radius:14px;background:var(--wh);border:2px solid var(--be);font-weight:800;font-size:1rem;color:var(--brown);text-align:center;box-shadow:0 2px 0 rgba(107,76,17,.08)}
+.tab-btn:active{transform:translateY(2px);box-shadow:none}
+.tabs-sm .tab-btn{padding:8px 8px;font-size:.78rem;font-weight:700}
+.tab-btn.active{background:linear-gradient(145deg,#ab47bc,#9c27b0);border-color:#9c27b0;color:#fff;box-shadow:0 4px 0 #6a1b9a}
+
+/* Sync dot */
+#sync-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;margin-left:6px}
+
+/* Rayon bubbles */
+.rayon-bubble{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:24px 14px;border-radius:20px;border:3px solid #ce93d8;background:#fff;box-shadow:0 4px 16px rgba(156,39,176,0.1);cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent;position:relative;overflow:hidden}
+.rayon-bubble:active{transform:scale(.93);box-shadow:0 2px 8px rgba(0,0,0,0.1)}
+.rayon-bubble.complet{border-color:#7b1fa2;background:#f3e5f5;box-shadow:0 4px 16px rgba(123,31,162,0.2)}
+
+/* Stock input */
+.stock-input{width:76px;height:52px;border:3px solid var(--be);border-radius:12px;background:var(--wh);font-size:1.4rem;font-weight:900;text-align:center;color:var(--brown);font-family:var(--font);-webkit-appearance:none;appearance:none}
+.stock-input:focus{border-color:#9c27b0;outline:none}
+.stock-input.saisi{border-color:var(--gn);background:var(--gnl)}
+
+/* Prod rows */
+.prod-row-full{transition:background .15s;-webkit-tap-highlight-color:transparent}
+.prod-row-full.saisi{background:#f0fdf4}
+
+/* Modal */
+#modal-overlay{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.55);align-items:flex-end}
+#modal-overlay.open{display:flex}
+#modal-box{background:var(--wh);border-radius:20px 20px 0 0;width:100%;max-height:85dvh;overflow-y:auto;padding:20px 20px 40px}
+.modal-handle{width:40px;height:4px;background:var(--be);border-radius:2px;margin:0 auto 20px}
+
+/* Btn primary */
+.btn-p{background:linear-gradient(145deg,#ab47bc,#7b1fa2);color:#fff;font-weight:800;font-size:1rem;padding:14px 24px;border-radius:var(--r);width:100%;box-shadow:0 4px 0 #6a1b9a}
+.btn-p:active{transform:translateY(2px);box-shadow:0 2px 0 #6a1b9a}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+
+.param-prod-row{padding:8px 10px;border-bottom:1px solid var(--be);background:var(--wh);transition:transform .15s ease}
+.param-prod-row.dragging{opacity:.85;box-shadow:0 12px 32px rgba(123,31,162,.4);border:2px solid #7b1fa2;z-index:100;position:fixed;pointer-events:none;border-radius:12px;background:#fff;transform:scale(1.02)}
+.param-drag-handle{width:44px;height:44px;border-radius:12px;background:linear-gradient(145deg,#f3e5f5,#ce93d8);color:#7b1fa2;font-size:18px;font-weight:900;border:none;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.param-drag-handle:active{background:linear-gradient(145deg,#ce93d8,#ab47bc);color:#fff}
+</style>
+<link rel="stylesheet" href="/css/tablet.css">
+</head>
+<body>
+
+<div id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div id="modal-box"><div class="modal-handle"></div><div id="modal-content"></div></div>
+</div>
+
+<header>
+  <div class="hdr-left">
+    <button class="back-btn" onclick="headerBack()">&#8249;</button>
+    <span class="logo">&#x1F4CB;</span>
+    <div>
+      <div class="name" id="magasin-label">COMMANDE</div>
+      <div class="title">Inventaire & Commandes <span id="sync-dot"></span></div>
+    </div>
+  </div>
+  <div id="user-badge" style="background:rgba(255,255,255,.2);color:#fff;border-radius:20px;padding:4px 12px;font-size:.8rem;font-weight:700"></div>
+  <button class="back" onclick="window.location.href='/home.html'" style="font-size:18px;background:none;color:#fff">&#127968;</button>
+</header>
+
+<!-- LOGIN FORM (shown if not email-authenticated) -->
+<div id="login-screen" style="display:none;padding:40px 20px;max-width:400px;margin:0 auto;text-align:center">
+  <div style="font-size:3rem;margin-bottom:12px">&#x1F4CB;</div>
+  <div style="font-size:1.3rem;font-weight:900;color:var(--brown);margin-bottom:4px">Inventaire & Commandes</div>
+  <div style="font-size:.85rem;color:var(--gr);margin-bottom:24px">Connectez-vous avec votre compte</div>
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <input id="login-email" type="email" placeholder="Email" style="padding:14px;border:3px solid var(--be);border-radius:12px;font-size:1rem;font-weight:700;color:var(--brown);background:var(--wh);font-family:var(--font)">
+    <input id="login-password" type="password" placeholder="Mot de passe" style="padding:14px;border:3px solid var(--be);border-radius:12px;font-size:1rem;font-weight:700;color:var(--brown);background:var(--wh);font-family:var(--font)">
+    <button id="login-btn" onclick="doLogin()" style="background:linear-gradient(145deg,#ab47bc,#7b1fa2);color:#fff;font-weight:800;font-size:1rem;padding:14px;border-radius:12px;box-shadow:0 4px 0 #6a1b9a">Se connecter</button>
+    <div id="login-error" style="display:none;color:#dc2626;font-weight:700;font-size:.85rem;margin-top:4px"></div>
+    <div onclick="doForgotPassword()" style="cursor:pointer;color:#7b1fa2;font-weight:700;font-size:.82rem;margin-top:8px;text-decoration:underline">Mot de passe oubli&eacute; ?</div>
+  </div>
+</div>
+
+<div id="app-content" style="display:none">
+<div id="date-banner" style="background:var(--goldbg);color:#7b1fa2;padding:8px 16px;text-align:center;font-size:.9rem;font-weight:800"></div>
+
+<div class="main">
+
+  <!-- WIZARD CONFIG -->
+  <div id="wizard-screen" style="display:none">
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:2.5rem;margin-bottom:8px">&#x2699;&#xFE0F;</div>
+      <div style="font-size:1.2rem;font-weight:900;color:var(--brown)">Configurer mon magasin</div>
+      <div style="font-size:.82rem;color:var(--gr);margin-top:4px">Completez les 4 etapes pour commencer</div>
+      <div style="background:#e9d5ff;border-radius:10px;height:8px;margin:16px 0 4px;overflow:hidden">
+        <div id="wizard-progress-bar" style="background:linear-gradient(90deg,#ab47bc,#7b1fa2);height:100%;width:0%;transition:width .3s;border-radius:10px"></div>
+      </div>
+      <div id="wizard-progress-text" style="font-size:.75rem;font-weight:800;color:#7b1fa2"></div>
+    </div>
+
+    <!-- Steps list -->
+    <div id="wizard-steps">
+      <div class="card" onclick="openWizardStep(1)" style="cursor:pointer;display:flex;align-items:center;gap:12px;border:3px solid var(--be);margin-bottom:10px" id="wz-step1-card">
+        <div id="wz-step1-icon" style="width:44px;height:44px;border-radius:50%;background:var(--be);color:var(--gr);font-size:1.2rem;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
+        <div style="flex:1"><div style="font-weight:900;font-size:.95rem;color:var(--brown)">Jours de commande</div><div style="font-size:.75rem;color:var(--gr);font-weight:700" id="wz-step1-sub">Quels jours commandez-vous ?</div></div>
+        <span style="color:var(--gr);font-size:1.2rem">&#8250;</span>
+      </div>
+      <div class="card" onclick="openWizardStep(2)" style="cursor:pointer;display:flex;align-items:center;gap:12px;border:3px solid var(--be);margin-bottom:10px" id="wz-step2-card">
+        <div id="wz-step2-icon" style="width:44px;height:44px;border-radius:50%;background:var(--be);color:var(--gr);font-size:1.2rem;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
+        <div style="flex:1"><div style="font-weight:900;font-size:.95rem;color:var(--brown)">Produits actifs</div><div style="font-size:.75rem;color:var(--gr);font-weight:700" id="wz-step2-sub">Selectionnez vos produits</div></div>
+        <span style="color:var(--gr);font-size:1.2rem">&#8250;</span>
+      </div>
+      <div class="card" onclick="openWizardStep(3)" style="cursor:pointer;display:flex;align-items:center;gap:12px;border:3px solid var(--be);margin-bottom:10px" id="wz-step3-card">
+        <div id="wz-step3-icon" style="width:44px;height:44px;border-radius:50%;background:var(--be);color:var(--gr);font-size:1.2rem;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
+        <div style="flex:1"><div style="font-weight:900;font-size:.95rem;color:var(--brown)">Ventes / jour</div><div style="font-size:.75rem;color:var(--gr);font-weight:700" id="wz-step3-sub">Renseignez vos VJ</div></div>
+        <span style="color:var(--gr);font-size:1.2rem">&#8250;</span>
+      </div>
+      <div class="card" onclick="openWizardStep(4)" style="cursor:pointer;display:flex;align-items:center;gap:12px;border:3px solid var(--be);margin-bottom:10px" id="wz-step4-card">
+        <div id="wz-step4-icon" style="width:44px;height:44px;border-radius:50%;background:var(--be);color:var(--gr);font-size:1.2rem;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0">4</div>
+        <div style="flex:1"><div style="font-weight:900;font-size:.95rem;color:var(--brown)">Liste stock</div><div style="font-size:.75rem;color:var(--gr);font-weight:700" id="wz-step4-sub">Ordre de comptage</div></div>
+        <span style="color:var(--gr);font-size:1.2rem">&#8250;</span>
+      </div>
+    </div>
+    <button id="wz-skip-btn" onclick="skipWizard()" style="display:none;width:100%;background:var(--be);color:var(--brown);font-weight:800;padding:14px;border-radius:var(--r);margin-top:8px;font-size:.9rem">Acceder a l'application &#8594;</button>
+  </div>
+
+  <!-- Wizard sub-pages -->
+  <div id="wizard-page" style="display:none">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <button onclick="closeWizardStep()" style="width:40px;height:40px;border-radius:50%;background:#f0e8d8;color:#6b4c11;font-size:18px;font-weight:900;border:none;box-shadow:0 2px 8px rgba(0,0,0,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0">&#8592;</button>
+      <div id="wizard-page-title" style="font-size:1.1rem;font-weight:900;color:var(--brown);flex:1"></div>
+    </div>
+    <div id="wizard-page-content"></div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs" id="main-tabs">
+    <button class="tab-btn active" id="tab-inventaire" onclick="switchTab('inventaire')">&#x1F4CB; Inventaire</button>
+    <button class="tab-btn" id="tab-commande" onclick="switchTab('commande')">&#x1F4E6; Commande</button>
+    <button class="tab-btn" id="tab-historique" onclick="switchTab('historique')">&#x1F4DA; Historique</button>
+  </div>
+  <div class="tabs tabs-sm" id="tabs-admin" style="display:none;margin-top:0;padding-top:0">
+    <button class="tab-btn" id="tab-params" onclick="switchTab('params')">&#x2699;&#xFE0F; Params</button>
+    <button class="tab-btn" id="tab-vj" onclick="switchTab('vj')">&#x1F4CA; VJ</button>
+  </div>
+
+  <!-- VUE INVENTAIRE -->
+  <div id="view-inventaire">
+    <div id="page-rayons">
+      <div style="font-size:1.1rem;font-weight:800;color:var(--brown);margin-bottom:6px;text-align:center">&#x1F4CB; Inventaire</div>
+      <div style="font-size:.82rem;color:var(--gr);text-align:center;margin-bottom:20px">Choisissez un rayon a inventorier</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px" id="bubbles-grid"></div>
+      <div style="background:#f3e5f5;border-radius:10px;padding:10px 14px;font-size:.78rem;color:#7b1fa2;font-weight:600;text-align:center">
+        Sauvegarde automatique apres chaque rayon termine
+      </div>
+    </div>
+
+    <!-- Page 2 : saisie rayon -->
+    <div id="page-saisie" style="display:none">
+      <div id="saisie-header" style="margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <button onclick="backToRayons()" style="width:40px;height:40px;border-radius:50%;background:#f0e8d8;color:#6b4c11;font-size:18px;font-weight:900;border:none;box-shadow:0 2px 8px rgba(0,0,0,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0">&#8592;</button>
+          <div id="saisie-title" style="font-size:1.1rem;font-weight:800;color:var(--brown);flex:1"></div>
+          <button onclick="resetRayon()" style="background:none;border:2px solid #fecaca;border-radius:10px;padding:6px 12px;font-family:Nunito,sans-serif;font-weight:800;font-size:.7rem;color:#dc2626;cursor:pointer;flex-shrink:0">&#128260; RAZ</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:14px;border:3px solid var(--be)" id="jours-card">
+        <div style="font-weight:800;color:var(--brown);margin-bottom:6px">&#x1F4C5; Jours a tenir</div>
+        <div style="background:#fff8e1;border-radius:8px;padding:7px 10px;margin-bottom:10px;font-size:.78rem;color:var(--brown)">
+          <strong>Dimanche &#x2192; 5j</strong> &middot; <strong>Mercredi &#x2192; 6j</strong> &middot; Ferie = +1j
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <input type="number" id="jours-input" min="1" max="14"
+            style="width:90px;height:60px;border:3px solid var(--be);border-radius:12px;font-size:2rem;font-weight:900;text-align:center;color:var(--brown);background:var(--goldbg);font-family:var(--font)"
+            placeholder="?" oninput="onJoursChange(this.value)" inputmode="numeric"/>
+          <div style="font-size:.82rem;color:var(--gr);line-height:1.6">Jours avant la<br>prochaine livraison</div>
+        </div>
+        <div id="jours-error" style="display:none;margin-top:8px;background:var(--rel);color:#991b1b;border-radius:8px;padding:7px 12px;font-size:.82rem;font-weight:700">
+          Indiquez le nombre de jours avant de saisir les stocks
+        </div>
+      </div>
+
+      <div style="background:var(--wh);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden;margin-bottom:16px" id="saisie-liste"></div>
+
+      <button onclick="validerRayon()" id="btn-valider-rayon"
+        style="background:linear-gradient(145deg,#22c55e,#16a34a);color:#fff;font-weight:900;font-size:1.05rem;padding:16px;border-radius:16px;width:100%;box-shadow:0 4px 0 #15803d;border:none;cursor:pointer">
+        &#10003; Rayon termine
+      </button>
+      <div id="rayon-error" style="display:none;margin-top:8px;background:var(--rel);color:#991b1b;border-radius:8px;padding:8px 12px;font-size:.82rem;font-weight:700"></div>
+    </div>
+  </div>
+
+  <!-- VUE COMMANDE -->
+  <div id="view-commande" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div style="font-size:1.1rem;font-weight:800;color:var(--brown)">&#x1F4E6; Commande a passer</div>
+      <button onclick="toggleVjAjust()" id="btn-vj-ajust" style="padding:8px 14px;border-radius:12px;background:linear-gradient(145deg,#f3e5f5,#e9d5ff);color:#7b1fa2;font-weight:800;font-size:.78rem;border:2px solid #ce93d8">&#x1F4CA; Ajuster VJ</button>
+    </div>
+    <div id="vj-ajust-panel" style="display:none;margin-bottom:14px"></div>
+    <div id="commande-content"></div>
+  </div>
+
+  <!-- VUE HISTORIQUE -->
+  <div id="view-historique" style="display:none">
+    <div style="font-size:1.1rem;font-weight:800;color:var(--brown);margin-bottom:14px">&#x1F4DA; Historique (60 jours)</div>
+    <div id="historique-content"></div>
+  </div>
+
+  <!-- VUE PARAMS -->
+  <div id="view-params" style="display:none">
+    <div style="font-size:1.1rem;font-weight:800;color:var(--brown);margin-bottom:14px">&#x2699;&#xFE0F; Parametres</div>
+    <div id="params-content"></div>
+  </div>
+
+  <!-- VUE VJ -->
+  <div id="view-vj" style="display:none">
+    <div style="font-size:1.1rem;font-weight:800;color:var(--brown);margin-bottom:14px">&#x1F4CA; Saisie VJ</div>
+    <div id="vj-content"></div>
+  </div>
+
+</div>
+</div><!-- /app-content -->
+
+<div id="inv-kb-toolbar" style="position:fixed;left:0;bottom:0;background:transparent;display:none;z-index:999;padding:8px 12px;width:50%">
+  <button id="inv-kb-next" style="background:linear-gradient(145deg,#ab47bc,#7b1fa2);color:#fff;border:none;border-radius:14px;padding:12px 20px;font-family:'Nunito',sans-serif;font-weight:900;font-size:15px;box-shadow:0 4px 14px rgba(156,39,176,.4);width:100%">&#8595; Suivant</button>
+</div>
+
+<script>
+// Empêcher les inputs number de changer au scroll
+document.addEventListener('touchmove', function() {
+  if (document.activeElement && document.activeElement.type === 'number') {
+    document.activeElement.blur();
+  }
+});
+// Expose globals for onclick handlers BEFORE module script
+window.switchTab = function(){};
+window.ouvrirRayon = function(){};
+window.backToRayons = function(){};
+window.onJoursChange = function(){};
+window.validerRayon = function(){};
+window.ouvrirCommandeDetail = function(){};
+window.marquerCommandePassee = function(){};
+window.renderCommande = function(){};
+window.renderHistorique = function(){};
+window.ouvrirHistoriqueJour = function(){};
+window.tapPlus = function(){};
+window.tapMinus = function(){};
+window.tapInput = function(){};
+window.toggleCaddy = function(){};
+window.toggleCat = function(){};
+window.closeModal = function(){};
+window.editProd = function(){};
+window.saveEditProd = function(){};
+window.toggleProduit = function(){};
+window.addProduit = function(){};
+window.setParamRayon = function(){};
+window.setParamSort = function(){};
+window.editVjInline = function(){};
+window.editCondInline = function(){};
+window.headerBack = function(){};
+window.resetRayon = function(){};
+window.selectVjRayon = function(){};
+window.vjSyncFromUnit = function(){};
+window.vjSyncFromCarton = function(){};
+window.vjSave = function(){};
+window.vjSaveMini = function(){};
+window.vjKeydown = function(){};
+window.activerTout = function(){};
+window.doLogin = function(){};
+window.openWizardStep = function(){};
+window.closeWizardStep = function(){};
+window.skipWizard = function(){};
+window.wzSaveJours = function(){};
+window.wzToggleProd = function(){};
+window.wzSaveVj = function(){};
+window.wzSaveOrdre = function(){};
+window.wzValidateStep = function(){};
+window.wzSaveOneVj = function(){};
+window.wzSaveOneOrdre = function(){};
+window.wzSaveOneJour = function(){};
+window.wzToggleJour = function(){};
+window.toggleVjAjust = function(){};
+window.onVjSlider = function(){};
+window.resetVjSliders = function(){};
+</script>
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
+import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword, sendPasswordResetEmail } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
+import { getFirestore, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteField, collection, query, orderBy, limit, serverTimestamp, writeBatch } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+
+var firebaseConfig = {
+  apiKey:'AIzaSyAHNdciMVNz15NoAXfc7yi9q4EnQJW8PKE',
+  authDomain:'teamconnect-valence-2026.firebaseapp.com',
+  projectId:'teamconnect-valence-2026',
+  storageBucket:'teamconnect-valence-2026.firebasestorage.app',
+  messagingSenderId:'47179706726',
+  appId:'1:47179706726:web:6403fd5f9dc9a3e10518a7'
+};
+
+var fApp = initializeApp(firebaseConfig);
+var auth = getAuth(fApp);
+var db = getFirestore(fApp);
+
+var currentUser = null;
+var magasinId = null;
+var magasinNom = '';
+var userRole = '';
+
+// -- RAYONS --
+var RAYONS = [
+  { id:'surgeles', nom:'Surgeles', icon:'\u2744\uFE0F', color:'7b1fa2', bgColor:'ab47bc', unite:'cartons', produits:[] },
+  { id:'frais', nom:'Frais', icon:'\uD83E\uDD57', color:'9c27b0', bgColor:'ce93d8', unite:'unites', produits:[] },
+  { id:'boissons', nom:'Boissons', icon:'\uD83E\uDDCA', color:'6a1b9a', bgColor:'ba68c8', unite:'unites', produits:[] }
+];
+
+// -- STATE --
+var activeTab = 'inventaire';
+var activeRayonId = null;
+var joursParRayon = {};
+var stockSaisi = {};
+var rayonComplet = {};
+var caddyBlur = /android/i.test(navigator.userAgent) ? 'blur(4px)' : 'blur(1px)';
+var currentCommandeInvId = null;
+var allCommandes = []; // historique from Firestore
+
+// Brouillon localStorage
+try {
+  var _brouillon = JSON.parse(localStorage.getItem('cmd_brouillon') || 'null');
+  if (_brouillon && _brouillon.stocks) {
+    stockSaisi = _brouillon.stocks;
+    joursParRayon = _brouillon.jours || {};
+  }
+} catch(e) {}
+
+function saveBrouillon() {
+  try { localStorage.setItem('cmd_brouillon', JSON.stringify({stocks:stockSaisi, jours:joursParRayon, ts:Date.now()})); } catch(e) {}
+}
+
+// -- SYNC DOT --
+function setSyncDot(s) {
+  var d = document.getElementById('sync-dot');
+  if (!d) return;
+  d.style.background = s === 'ok' ? '#22c55e' : s === 'syncing' ? '#f59e0b' : 'var(--re)';
+}
+
+// -- DATE BANNER --
+function updateDateBanner() {
+  var now = new Date();
+  var opts = {weekday:'long', day:'numeric', month:'long'};
+  var h = now.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+  document.getElementById('date-banner').innerHTML =
+    "<span style='font-size:1rem;font-weight:900;color:#e53935;text-transform:capitalize'>" +
+    now.toLocaleDateString('fr-FR', opts) + "</span> <span style='font-size:.95rem;font-weight:800;color:#c62828;margin-left:10px'>" + h + "</span>";
+}
+updateDateBanner();
+setInterval(updateDateBanner, 60000);
+
+// ============================================
+// LOGIN
+// ============================================
+window.doLogin = async function() {
+  var email = document.getElementById('login-email').value.trim();
+  var pwd = document.getElementById('login-password').value;
+  var errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+  if (!email || !pwd) { errEl.textContent = 'Email et mot de passe requis'; errEl.style.display = 'block'; return; }
+  var btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.textContent = 'Connexion...';
+  try {
+    await signInWithEmailAndPassword(auth, email, pwd);
+    // onAuthStateChanged will handle the rest
+  } catch(e) {
+    errEl.textContent = 'Email ou mot de passe incorrect';
+    errEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Se connecter';
+  }
+};
+
+window.doForgotPassword = async function() {
+  var email = document.getElementById('login-email').value.trim();
+  var errEl = document.getElementById('login-error');
+  if (!email) { errEl.textContent = 'Saisissez votre email d\'abord'; errEl.style.display = 'block'; return; }
+  try {
+    await sendPasswordResetEmail(auth, email);
+    errEl.style.color = '#166534';
+    errEl.textContent = 'Email envoyé ! Vérifiez votre boîte mail pour réinitialiser votre mot de passe.';
+    errEl.style.display = 'block';
+    setTimeout(function() { errEl.style.color = '#dc2626'; }, 5000);
+  } catch(e) {
+    errEl.textContent = 'Erreur : vérifiez que l\'email est correct';
+    errEl.style.display = 'block';
+  }
+};
+
+// ============================================
+// AUTH + INIT
+// ============================================
+onAuthStateChanged(auth, async function(user) {
+  if (!user || user.isAnonymous) {
+    // Show login form
+    document.getElementById('login-screen').style.display = 'block';
+    document.getElementById('app-content').style.display = 'none';
+    return;
+  }
+  currentUser = user;
+
+  // Charger le user doc Firestore
+  var userDoc = await getDoc(doc(db, 'users', user.uid));
+  if (!userDoc.exists()) { alert('Compte non configure. Contactez votre administrateur.'); signOut(auth); return; }
+  var userData = userDoc.data();
+  magasinId = userData.magasinId;
+  userRole = userData.role || 'user';
+  document.getElementById('user-badge').textContent = userData.prenom || user.email || '?';
+
+  if (!magasinId) { alert('Magasin non configure'); return; }
+
+  // Charger nom magasin
+  var magDoc = await getDoc(doc(db, 'magasins', magasinId));
+  if (magDoc.exists()) {
+    magasinNom = magDoc.data().nom || magasinId;
+    document.getElementById('magasin-label').textContent = magasinNom;
+  }
+
+  // Montrer onglets admin
+  if (userRole === 'admin') {
+    document.getElementById('tabs-admin').style.display = '';
+  }
+
+  // Show app, hide login
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-content').style.display = 'block';
+
+  // Charger les catalogues + ajustements VJ
+  await loadCatalogues();
+  await loadVjAjustements();
+  setSyncDot('ok');
+
+  // Check wizard completion
+  await checkWizard();
+});
+
+// ============================================
+// CHARGER CATALOGUES DEPUIS FIRESTORE
+// ============================================
+async function loadCatalogues() {
+  for (var ri = 0; ri < RAYONS.length; ri++) {
+    var rayon = RAYONS[ri];
+    var type = rayon.id;
+
+    // Charger catalogue global
+    var catSnap = await getDocs(collection(db, 'catalogues', type, 'produits'));
+    var prods = catSnap.docs.map(function(d) { return { id: d.id, ...d.data() }; }).filter(function(p) { return p.actif !== false; });
+
+    // Charger config perso du magasin (VJ, ordre stock, inactifs)
+    var vjMap = {}, ordreMap = {}, inactifMap = {};
+    try {
+      var vjSnap = await getDocs(collection(db, 'magasins', magasinId, 'config_commande', type, 'ventes_jour'));
+      vjSnap.docs.forEach(function(d) { vjMap[d.id] = d.data().valeur; });
+      var ordreSnap = await getDocs(collection(db, 'magasins', magasinId, 'config_commande', type, 'ordre_stock'));
+      ordreSnap.docs.forEach(function(d) { ordreMap[d.id] = d.data().rang; });
+      var inactifSnap = await getDocs(collection(db, 'magasins', magasinId, 'config_commande', type, 'produits_inactifs'));
+      inactifSnap.docs.forEach(function(d) { inactifMap[d.id] = d.data().actif; });
+    } catch(e) {}
+
+    // Construire la liste de produits pour ce rayon
+    rayon.produits = prods.map(function(p) {
+      return {
+        id: p.id,
+        nom: p.nom || '',
+        cond: p.conditionnement_nombre || p.cond || null,
+        conditionnement: p.conditionnement || '',
+        vj: vjMap[p.id] !== undefined ? vjMap[p.id] : (p.ventes_jour_defaut || null),
+        ref: p.ref_fournisseur || '',
+        rangStock: ordreMap[p.id] !== undefined ? ordreMap[p.id] : (p.ordre_fournisseur || 999),
+        rangFournisseur: p.ordre_fournisseur || 999,
+        actif: inactifMap[p.id] !== undefined ? inactifMap[p.id] : true,
+        stockMini: p.stock_mini || 0,
+        categorie: p.categorie || ''
+      };
+    });
+
+    // Tri par ordre stock
+    rayon.produits.sort(function(a, b) { return a.rangStock - b.rangStock; });
+  }
+}
+
+// ============================================
+// NAVIGATION
+// ============================================
+window.switchTab = function(tab) {
+  activeTab = tab;
+  var views = ['inventaire', 'commande', 'historique', 'params', 'vj'];
+  for (var i = 0; i < views.length; i++) {
+    var el = document.getElementById('view-' + views[i]);
+    if (el) el.style.display = views[i] === tab ? 'block' : 'none';
+    var tb = document.getElementById('tab-' + views[i]);
+    if (tb) { if (views[i] === tab) tb.classList.add('active'); else tb.classList.remove('active'); }
+  }
+  if (tab === 'inventaire') { backToRayonsInternal(); renderBubbles(); }
+  if (tab === 'commande') renderCommandeInternal();
+  if (tab === 'historique') renderHistoriqueInternal();
+  if (tab === 'params') renderParamsInternal();
+  if (tab === 'vj') renderVjInternal();
+};
+
+window.headerBack = function() {
+  var saisie = document.getElementById('page-saisie');
+  if (saisie && saisie.style.display !== 'none') { backToRayonsInternal(); }
+  else { history.back(); }
+};
+
+// ============================================
+// BUBBLES
+// ============================================
+function renderBubbles() {
+  var grid = document.getElementById('bubbles-grid');
+  if (!grid) return;
+  var html = '';
+  for (var i = 0; i < RAYONS.length; i++) {
+    var r = RAYONS[i];
+    var count = r.produits.filter(function(p) { return p.actif !== false; }).length;
+    var done = rayonComplet[r.id];
+    html += '<button onclick="ouvrirRayon(\'' + r.id + '\')" class="rayon-bubble' + (done ? ' complet' : '') + '">' +
+      '<span style="font-size:2.5rem">' + r.icon + '</span>' +
+      '<span style="font-weight:800;font-size:1.05rem;color:#7b1fa2;letter-spacing:.3px">' + r.nom + '</span>' +
+      '<span style="font-size:.72rem;font-weight:700;color:' + (done ? '#7b1fa2' : 'var(--gr)') + ';background:' + (done ? '#f3e5f5' : 'var(--be)') + ';padding:3px 10px;border-radius:10px">' + (done ? '\u2713 Termine' : count + ' produits') + '</span>' +
+    '</button>';
+  }
+  // Bulle Inventaire Comptable (meme design)
+  html += '<button onclick="window.location.href=\'/inventaire-compta.html\'" class="rayon-bubble">' +
+    '<span style="font-size:2.5rem">\uD83D\uDCCA</span>' +
+    '<span style="font-weight:800;font-size:1.05rem;color:#7b1fa2;letter-spacing:.3px">Inventaire Compta</span>' +
+    '<span style="font-size:.72rem;font-weight:700;color:var(--gr);background:var(--be);padding:3px 10px;border-radius:10px">Trimestriel</span>' +
+  '</button>';
+  grid.innerHTML = html;
+}
+
+// ============================================
+// OUVRIR RAYON
+// ============================================
+window.ouvrirRayon = function(rayonId) {
+  activeRayonId = rayonId;
+  var rayon = RAYONS.find(function(r) { return r.id === rayonId; });
+  if (!rayon) return;
+  document.getElementById('page-rayons').style.display = 'none';
+  document.getElementById('page-saisie').style.display = 'block';
+  document.getElementById('saisie-title').textContent = rayon.icon + ' ' + rayon.nom;
+
+  // Auto-fill jours à tenir basé sur le jour actuel
+  if (!joursParRayon[rayonId]) {
+    var autoJours = getAutoJours(rayonId);
+    if (autoJours) joursParRayon[rayonId] = autoJours;
+  }
+  document.getElementById('jours-input').value = joursParRayon[rayonId] || '';
+  document.getElementById('jours-card').style.borderColor = joursParRayon[rayonId] ? 'var(--gn)' : 'var(--be)';
+  renderSaisie(rayonId);
+};
+
+// Auto-lookup jours à tenir selon le jour actuel et la config
+function getAutoJours(rayonId) {
+  var cfg = wizardConfig[rayonId];
+  if (!cfg || !cfg.jours_map) return null;
+  var joursFR = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  var aujourdhui = joursFR[new Date().getDay()];
+  if (cfg.jours_map[aujourdhui]) return cfg.jours_map[aujourdhui];
+  return null;
+}
+
+function backToRayonsInternal() {
+  activeRayonId = null;
+  document.getElementById('page-rayons').style.display = 'block';
+  document.getElementById('page-saisie').style.display = 'none';
+  renderBubbles();
+}
+window.backToRayons = function() { backToRayonsInternal(); };
+
+// ============================================
+// JOURS
+// ============================================
+window.onJoursChange = function(v) {
+  var n = parseInt(v);
+  joursParRayon[activeRayonId] = (isNaN(n) || n < 1) ? null : n;
+  document.getElementById('jours-card').style.borderColor = joursParRayon[activeRayonId] ? 'var(--gn)' : 'var(--be)';
+  if (joursParRayon[activeRayonId]) {
+    var errEl = document.getElementById('jours-error');
+    if (errEl) errEl.style.display = 'none';
+  }
+  saveBrouillon();
+};
+
+// ============================================
+// SAISIE STOCK
+// ============================================
+function renderSaisie(rayonId) {
+  var liste = document.getElementById('saisie-liste');
+  if (!liste) return;
+  var rayon = RAYONS.find(function(r) { return r.id === rayonId; });
+  if (!rayon) return;
+
+  var prods = rayon.produits.filter(function(p) { return p.actif !== false; });
+  if (prods.length === 0) {
+    liste.innerHTML = '<div style="padding:20px;text-align:center;color:var(--gr)">Aucun produit dans le catalogue</div>';
+    return;
+  }
+
+  var rows = '';
+  for (var idx = 0; idx < prods.length; idx++) {
+    var p = prods[idx];
+    var stock = stockSaisi[p.id];
+    var saisi = stock !== null && stock !== undefined && stock !== '';
+    var rowBg = saisi ? '#dcfce7' : 'var(--wh)';
+    var vjDisplay = (p.vj !== null && p.vj !== undefined) ? p.vj : '';
+    var condDisplay = p.cond || '';
+    var rangDisplay = p.rangStock || '';
+
+    var vjHtml = '<div style="display:flex;align-items:center;gap:10px;margin-top:2px;padding-left:0">' +
+      '<button onclick="event.stopPropagation();editVjInline(\'' + p.id.replace(/'/g, "\\'") + '\',\'' + rayon.id + '\')" id="vj-' + p.id + '" style="font-size:.8rem;font-weight:900;color:' + (vjDisplay ? '#7b1fa2' : '#dc2626') + ';cursor:pointer;border:2px solid ' + (vjDisplay ? '#e9d5ff' : '#fecaca') + ';border-radius:10px;padding:4px 10px;background:' + (vjDisplay ? '#faf5ff' : '#fff5f5') + ';-webkit-tap-highlight-color:transparent;font-family:Nunito,sans-serif">' + (vjDisplay ? 'vj ' + vjDisplay : 'vj ?') + '</button>' +
+      '<span onclick="event.stopPropagation();editCondInline(\'' + p.id.replace(/'/g, "\\'") + '\',\'' + rayon.id + '\')" id="cond-' + p.id + '" style="font-size:.78rem;font-weight:800;color:' + (condDisplay ? '#e67e22' : '#dc2626') + ';cursor:pointer">' + (condDisplay ? 'cond ' + condDisplay : 'cond ?') + '</span>' +
+    '</div>';
+
+    rows += '<div class="prod-row-full' + (saisi ? ' saisi' : '') + '" id="row-' + p.id + '" style="border-bottom:1px solid #e5e7eb;background:' + rowBg + ';padding:8px 8px;touch-action:manipulation">' +
+      '<div style="display:flex;align-items:center;gap:5px">' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-weight:900;font-size:.92rem;color:var(--brown);line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + rangDisplay + '. ' + p.nom + '</div>' +
+          vjHtml +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-left:auto">' +
+          '<button onclick="tapMinus(\'' + p.id.replace(/'/g, "\\'") + '\',\'' + rayon.id + '\')" style="width:44px;height:44px;border-radius:50%;background:var(--rel);color:#991b1b;font-size:22px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0">\u2212</button>' +
+          '<div onclick="tapInput(\'' + p.id.replace(/'/g, "\\'") + '\',\'' + rayon.id + '\')" id="bubble-' + p.id + '" style="min-width:46px;height:40px;border-radius:12px;background:' + (saisi ? 'var(--gn)' : 'var(--be)') + ';color:' + (saisi ? '#fff' : 'var(--brown)') + ';font-size:1.3rem;font-weight:900;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0 8px">' + (saisi ? stock : '?') + '</div>' +
+          '<button onclick="tapPlus(\'' + p.id.replace(/'/g, "\\'") + '\',\'' + rayon.id + '\')" style="width:44px;height:44px;border-radius:50%;background:var(--bll);color:#1e40af;font-size:22px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0">+</button>' +
+        '</div>' +
+      '</div>' +
+      '<input type="hidden" id="inp-' + p.id + '" value="' + (saisi ? stock : '') + '"/>' +
+    '</div>';
+  }
+
+  liste.innerHTML = rows || '<div style="padding:20px;text-align:center;color:var(--gr)">Aucun produit</div>';
+}
+
+// ============================================
+// TAP +/- / INPUT
+// ============================================
+function checkJoursRequired(rayonId) {
+  if (joursParRayon[rayonId]) return true;
+  var jc = document.getElementById('jours-card');
+  if (jc) { jc.style.borderColor = 'var(--re)'; jc.style.animation = 'shake .4s'; setTimeout(function() { jc.style.animation = ''; }, 500); }
+  var errEl = document.getElementById('jours-error');
+  if (errEl) errEl.style.display = 'block';
+  var ji = document.getElementById('jours-input');
+  if (ji) { ji.focus(); ji.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+  return false;
+}
+
+function updateBubble(prodId, rayonId, val) {
+  var inp = document.getElementById('inp-' + prodId);
+  if (inp) inp.value = val;
+  var bubble = document.getElementById('bubble-' + prodId);
+  var row = document.getElementById('row-' + prodId);
+  if (val === '' || val === null || val === undefined) {
+    stockSaisi[prodId] = undefined;
+    if (bubble) { bubble.textContent = '?'; bubble.style.background = '#f0e8d8'; bubble.style.color = '#6b4c11'; }
+    if (row) { row.style.background = '#fff'; }
+  } else {
+    var s = parseFloat(val);
+    stockSaisi[prodId] = s;
+    if (bubble) { bubble.textContent = s; bubble.style.background = '#22c55e'; bubble.style.color = '#fff'; }
+    if (row) { row.style.background = '#dcfce7'; }
+  }
+  saveBrouillon();
+}
+
+window.tapPlus = function(prodId, rayonId) {
+  if (!checkJoursRequired(rayonId)) return;
+  var current = stockSaisi[prodId];
+  var val = (current !== undefined && current !== null && current !== '') ? parseFloat(current) + 1 : 1;
+  updateBubble(prodId, rayonId, val);
+};
+
+window.tapMinus = function(prodId, rayonId) {
+  if (!checkJoursRequired(rayonId)) return;
+  var current = stockSaisi[prodId];
+  if (current === undefined || current === null || current === '') { updateBubble(prodId, rayonId, 0); return; }
+  var val = Math.max(0, parseFloat(current) - 1);
+  updateBubble(prodId, rayonId, val);
+};
+
+window.tapInput = function(prodId, rayonId) {
+  if (!checkJoursRequired(rayonId)) return;
+  var bubble = document.getElementById('bubble-' + prodId);
+  if (!bubble) return;
+  var current = stockSaisi[prodId];
+  var currentVal = (current !== undefined && current !== null && current !== '') ? current : '';
+  var inp = document.createElement('input');
+  inp.type = 'number'; inp.inputMode = 'decimal'; inp.step = '0.25'; inp.enterKeyHint = 'next';
+  inp.value = currentVal;
+  inp.style.cssText = 'width:60px;height:40px;border:3px solid #9c27b0;border-radius:12px;text-align:center;font-family:Nunito,sans-serif;font-weight:900;font-size:1.3rem;color:#6b4c11;background:#FFF8E7;outline:none';
+  bubble.innerHTML = ''; bubble.style.background = 'transparent'; bubble.style.padding = '0';
+  bubble.appendChild(inp); inp.focus(); inp.select();
+  var done = function() {
+    var val = inp.value.trim();
+    if (val === '') { updateBubble(prodId, rayonId, ''); }
+    else { var n = parseFloat(val); if (!isNaN(n) && n >= 0) updateBubble(prodId, rayonId, n); }
+  };
+  inp.addEventListener('blur', done);
+  var kbNext = document.getElementById('inv-kb-toolbar');
+  if (kbNext) { kbNext.style.display = 'block'; kbNext._prodId = prodId; kbNext._rayonId = rayonId; kbNext._done = done; positionInvToolbar(); }
+  inp.addEventListener('blur', function() {
+    setTimeout(function() {
+      if (!document.activeElement || document.activeElement.tagName !== 'INPUT') { if (kbNext) kbNext.style.display = 'none'; }
+    }, 200);
+  });
+  inp.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault(); done();
+      var row = document.getElementById('row-' + prodId);
+      if (row) {
+        var next = row.nextElementSibling;
+        while (next && !next.classList.contains('prod-row-full')) next = next.nextElementSibling;
+        if (next) { var nextId = next.id.replace('row-', ''); tapInput(nextId, rayonId); }
+        else inp.blur();
+      }
+    }
+  });
+};
+
+// Floating next button
+var invKbBtn = document.getElementById('inv-kb-next');
+if (invKbBtn) {
+  var nextHandler = function() {
+    var toolbar = document.getElementById('inv-kb-toolbar');
+    if (!toolbar) return;
+    if (toolbar._done) toolbar._done();
+    var row = document.getElementById('row-' + toolbar._prodId);
+    if (row) {
+      var next = row.nextElementSibling;
+      while (next && !next.classList.contains('prod-row-full')) next = next.nextElementSibling;
+      if (next) { var nextId = next.id.replace('row-', ''); tapInput(nextId, toolbar._rayonId); }
+    }
+  };
+  invKbBtn.addEventListener('touchstart', function(e) { e.preventDefault(); nextHandler(); });
+  invKbBtn.addEventListener('click', nextHandler);
+}
+
+function positionInvToolbar() {
+  var kbT = document.getElementById('inv-kb-toolbar');
+  if (!kbT || kbT.style.display === 'none') return;
+  kbT.style.position = 'fixed'; kbT.style.left = '0';
+  if (window.visualViewport) {
+    var vv = window.visualViewport;
+    kbT.style.top = (vv.offsetTop + vv.height - kbT.offsetHeight - 10) + 'px';
+    kbT.style.bottom = 'auto';
+  } else { kbT.style.top = 'auto'; kbT.style.bottom = '10px'; }
+}
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', positionInvToolbar);
+  window.visualViewport.addEventListener('scroll', positionInvToolbar);
+}
+
+// ============================================
+// EDIT VJ / COND INLINE
+// ============================================
+window.editVjInline = function(prodId, rayonId) {
+  var el = document.getElementById('vj-' + prodId) || document.getElementById('vj-cmd-' + prodId);
+  if (!el) return;
+  var rayon = RAYONS.find(function(r) { return r.id === rayonId; });
+  if (!rayon) return;
+  var prod = rayon.produits.find(function(p) { return p.id === prodId; });
+  if (!prod) return;
+  var currentVj = prod.vj;
+  var inp = document.createElement('input');
+  inp.type = 'number'; inp.inputMode = 'decimal'; inp.step = '0.1';
+  inp.value = (currentVj !== null && currentVj !== undefined) ? currentVj : '';
+  inp.placeholder = 'VJ';
+  inp.style.cssText = 'width:55px;height:28px;border:2px solid #7c3aed;border-radius:8px;text-align:center;font-family:Nunito,sans-serif;font-weight:800;font-size:.8rem;color:#7c3aed;background:#f5f3ff;outline:none';
+  el.innerHTML = ''; el.appendChild(inp); inp.focus(); inp.select();
+  var done = function() {
+    var val = inp.value.trim();
+    var newVj = val === '' ? null : parseFloat(val);
+    prod.vj = newVj;
+    // Sauvegarder dans Firestore (config perso du magasin)
+    if (newVj !== null) {
+      setDoc(doc(db, 'magasins', magasinId, 'config_commande', rayonId, 'ventes_jour', prodId), { valeur: newVj });
+    }
+    var isCmdView = el.id.indexOf('vj-cmd-') === 0;
+    if (isCmdView) {
+      el.innerHTML = '<div style="font-size:.5rem;color:#7b1fa2;font-weight:700">VJ</div><div style="font-size:.85rem;font-weight:900;color:#7b1fa2">' + (newVj !== null ? newVj : '<span style="color:#dc2626">?</span>') + '</div>';
+    } else {
+      el.innerHTML = (newVj !== null) ? 'vj ' + newVj : '<span style="color:#ccc">vj ?</span>';
+    }
+  };
+  inp.addEventListener('blur', done);
+  inp.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); } });
+};
+
+window.editCondInline = function(prodId, rayonId) {
+  var el = document.getElementById('cond-' + prodId);
+  if (!el) return;
+  var rayon = RAYONS.find(function(r) { return r.id === rayonId; });
+  if (!rayon) return;
+  var prod = rayon.produits.find(function(p) { return p.id === prodId; });
+  if (!prod) return;
+  var currentCond = prod.cond;
+  var inp = document.createElement('input');
+  inp.type = 'number'; inp.inputMode = 'numeric'; inp.step = '1';
+  inp.value = (currentCond !== null && currentCond !== undefined) ? currentCond : '';
+  inp.placeholder = 'Cond';
+  inp.style.cssText = 'width:55px;height:28px;border:2px solid #e67e22;border-radius:8px;text-align:center;font-family:Nunito,sans-serif;font-weight:800;font-size:.8rem;color:#e67e22;background:#fef9f3;outline:none';
+  el.innerHTML = ''; el.appendChild(inp); inp.focus(); inp.select();
+  var done = function() {
+    var val = inp.value.trim();
+    var newCond = val === '' ? null : parseInt(val);
+    prod.cond = newCond;
+    el.innerHTML = (newCond !== null) ? 'cond ' + newCond : '<span style="color:#ccc">cond ?</span>';
+  };
+  inp.addEventListener('blur', done);
+  inp.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); } });
+};
+
+// ============================================
+// RESET / VALIDER RAYON
+// ============================================
+window.resetRayon = function() {
+  if (!activeRayonId) return;
+  var rayon = RAYONS.find(function(r) { return r.id === activeRayonId; });
+  if (!rayon) return;
+  if (!confirm('Remettre tous les stocks de ce rayon a zero ?')) return;
+  rayon.produits.forEach(function(p) { delete stockSaisi[p.id]; });
+  joursParRayon[activeRayonId] = null;
+  saveBrouillon();
+  document.getElementById('jours-input').value = '';
+  document.getElementById('jours-card').style.borderColor = 'var(--be)';
+  renderSaisie(activeRayonId);
+};
+
+window.validerRayon = function() {
+  var rayon = RAYONS.find(function(r) { return r.id === activeRayonId; });
+  if (!rayon) return;
+  var errEl = document.getElementById('rayon-error');
+
+  if (!joursParRayon[activeRayonId]) {
+    errEl.textContent = 'Indiquez le nombre de jours a tenir';
+    errEl.style.display = 'block';
+    document.getElementById('jours-input').focus();
+    return;
+  }
+
+  var prods = rayon.produits.filter(function(p) { return p.actif !== false; });
+  var manquants = prods.filter(function(p) { return stockSaisi[p.id] === undefined || stockSaisi[p.id] === ''; });
+
+  if (manquants.length > 0) {
+    if (!confirm(manquants.length + ' produit(s) non renseigne(s).\n\nContinuer quand meme ?')) return;
+  }
+
+  errEl.style.display = 'none';
+  rayonComplet[activeRayonId] = true;
+  sauvegarderInventaire().then(function() {
+    rayon.produits.forEach(function(p) { delete stockSaisi[p.id]; });
+    delete joursParRayon[activeRayonId];
+    delete rayonComplet[activeRayonId];
+    saveBrouillon();
+    backToRayonsInternal();
+    openModal('<div style="text-align:center;padding:20px 0">' +
+      '<div style="font-size:3.5rem;margin-bottom:12px">' + rayon.icon + '</div>' +
+      '<div style="font-size:1.2rem;font-weight:800;color:var(--brown);margin-bottom:6px">' + rayon.nom + ' \u2014 Termine !</div>' +
+      '<div style="font-size:.88rem;color:var(--gr);margin-bottom:20px">Sauvegarde OK</div>' +
+      '<button onclick="closeModal()" class="btn-p">Continuer</button>' +
+    '</div>');
+  });
+};
+
+// ============================================
+// SAUVEGARDER INVENTAIRE → FIRESTORE
+// ============================================
+async function sauvegarderInventaire() {
+  setSyncDot('syncing');
+  var now = new Date();
+  var jours = joursParRayon[activeRayonId] || 3;
+  var rayon = RAYONS.find(function(r) { return r.id === activeRayonId; });
+  if (!rayon) return;
+
+  // Construire les lignes de commande
+  var lignes = rayon.produits.filter(function(p) { return p.actif !== false; }).map(function(p) {
+    var stock = stockSaisi[p.id] !== undefined ? stockSaisi[p.id] : 0;
+    var vjBase = p.vj || 0;
+    var vj = getAjustedVj(vjBase, activeRayonId, p.categorie || '');
+    var cond = p.cond || 1;
+    var besoin = (rayon.unite === 'cartons' && cond > 1) ? Math.ceil(vj * jours / cond) : Math.ceil(vj * jours);
+    var a_commander = Math.max(0, besoin - stock);
+    return {
+      produitId: p.id, nom: p.nom, ref_fournisseur: p.ref || '',
+      conditionnement: p.conditionnement || '', cond: p.cond || null,
+      ventes_jour: vj, stock: stock, besoin: besoin, a_commander: a_commander,
+      ordre_fournisseur: p.rangFournisseur || 999, stockMini: p.stockMini || 0
+    };
+  });
+
+  try {
+    await addDoc(collection(db, 'magasins', magasinId, 'commandes'), {
+      type: activeRayonId,
+      date: now.toISOString().slice(0, 10),
+      dateStr: now.toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'}),
+      heure: now.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}),
+      jours: jours,
+      statut: 'a_passer',
+      createdBy: currentUser.uid,
+      userName: document.getElementById('user-badge').textContent || '?',
+      createdAt: serverTimestamp(),
+      rayonId: activeRayonId,
+      rayonNom: rayon.nom,
+      rayonIcon: rayon.icon,
+      lignes: lignes
+    });
+    setSyncDot('ok');
+  } catch(e) {
+    setSyncDot('error');
+    alert('Erreur sauvegarde: ' + e.message);
+  }
+}
+
+// ============================================
+// VUE COMMANDE
+// ============================================
+async function renderCommandeInternal() {
+  var container = document.getElementById('commande-content');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--gr)">Chargement...</div>';
+
+  // Charger les commandes a_passer
+  try {
+    var q2 = query(collection(db, 'magasins', magasinId, 'commandes'), orderBy('createdAt', 'desc'), limit(50));
+    var snap = await getDocs(q2);
+    allCommandes = snap.docs.map(function(d) { return { id: d.id, ...d.data() }; });
+  } catch(e) { allCommandes = []; }
+
+  var invs = allCommandes.filter(function(c) { return c.statut === 'a_passer'; });
+
+  if (!invs.length) {
+    container.innerHTML = '<div style="text-align:center;padding:40px"><div style="font-size:3rem">&#x2705;</div><div style="font-weight:700;margin-top:8px;color:#166534">Toutes les commandes sont passees !</div></div>';
+    return;
+  }
+
+  var html = '';
+  for (var k = 0; k < invs.length; k++) {
+    var inv = invs[k];
+    html += '<div onclick="ouvrirCommandeDetail(\'' + inv.id + '\')" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;margin-bottom:8px;border-radius:var(--r);background:#fff;border:2px solid #ce93d8;box-shadow:var(--sh)">' +
+      '<div><div style="font-size:.95rem;font-weight:900;color:#7b1fa2;text-transform:capitalize">' + (inv.dateStr || inv.date) + ' \u2014 ' + (inv.heure || '') + '</div>' +
+      '<div style="font-size:.75rem;color:var(--gr);margin-top:2px">' + (inv.userName || '') + ' \u00b7 ' + (inv.rayonIcon || '') + ' ' + (inv.rayonNom || inv.type) + ' \u00b7 A passer</div></div>' +
+      '<span style="color:#ce93d8;font-size:1.4rem">\u203A</span></div>';
+  }
+  container.innerHTML = html;
+}
+window.renderCommande = function() { renderCommandeInternal(); };
+
+// ============================================
+// COMMANDE DETAIL
+// ============================================
+window.ouvrirCommandeDetail = function(cmdId) {
+  currentCommandeInvId = cmdId;
+  var inv = allCommandes.find(function(c) { return c.id === cmdId; });
+  if (!inv) return;
+  var container = document.getElementById('commande-content');
+  var rayon = RAYONS.find(function(r) { return r.id === inv.type; });
+  var rayonColor = rayon ? rayon.color : '7b1fa2';
+  var rayonIcon = rayon ? rayon.icon : '';
+  var rayonNom = rayon ? rayon.nom : inv.type;
+
+  var html = '<div style="background:linear-gradient(145deg,#ab47bc,#7b1fa2);border-radius:var(--r) var(--r) 0 0;padding:12px 16px;display:flex;align-items:center;gap:10px">' +
+    '<button onclick="renderCommande()" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);color:#fff;font-size:18px;font-weight:900;border:none;display:flex;align-items:center;justify-content:center;flex-shrink:0">&#8592;</button>' +
+    '<div style="flex:1"><div style="font-size:1.1rem;font-weight:900;color:#fff;text-transform:capitalize">' + (inv.dateStr || inv.date) + '</div>' +
+    '<div style="font-size:.78rem;color:#fff;opacity:.8;margin-top:2px">' + (inv.heure || '') + ' \u00b7 ' + (inv.userName || '') + '</div></div></div>';
+
+  html += '<div style="background:#' + rayonColor + '15;padding:8px 14px;border-left:4px solid #' + rayonColor + '">' +
+    '<div style="font-weight:800;color:#' + rayonColor + ';font-size:.88rem">' + rayonIcon + ' ' + rayonNom + ' \u2014 ' + (inv.jours || 3) + ' jours</div></div>';
+
+  // Trier par ordre fournisseur
+  var lignes = (inv.lignes || []).slice().sort(function(a, b) { return (a.ordre_fournisseur || 999) - (b.ordre_fournisseur || 999); });
+  var rang = 0;
+  for (var pi = 0; pi < lignes.length; pi++) {
+    var p = lignes[pi];
+    rang++;
+    var cond = p.cond || 1;
+    var cmdColor = 'var(--gr)', cmdVal = '\u2014';
+    var besoin = p.besoin || 0;
+    var stock = p.stock || 0;
+    var aCmd = p.a_commander || 0;
+    var stockMini = p.stockMini || 0;
+    var cmdByMini = stockMini > 0 ? Math.ceil(stockMini - stock) : 0;
+    var finalCmd = Math.max(aCmd, cmdByMini);
+
+    if (besoin > 0 || (stockMini > 0 && stock < stockMini)) {
+      if (finalCmd <= 0) { cmdColor = '#6b4c11'; cmdVal = '\u2713 OK'; }
+      else { cmdColor = '#a855f7'; cmdVal = finalCmd + (rayon && rayon.unite === 'cartons' ? ' ctn' : ''); }
+    }
+
+    var rowId = 'cmd-row-' + p.produitId;
+    html += '<div id="' + rowId + '" style="display:grid;grid-template-columns:auto 1.2fr .6fr .6fr .8fr;gap:2px;align-items:center;padding:10px 10px;border-bottom:1px solid #e5e7eb;transition:filter .3s,opacity .3s">' +
+      '<span class="caddy-check" onclick="toggleCaddy(\'' + rowId + '\')" style="font-size:1.4rem;width:28px;text-align:center;flex-shrink:0;cursor:pointer">\u25CB</span>' +
+      '<span onclick="toggleCaddy(\'' + rowId + '\')" style="font-weight:900;font-size:1rem;color:var(--brown);cursor:pointer">' + p.nom + '</span>' +
+      '<div onclick="toggleCaddy(\'' + rowId + '\')" style="text-align:center;cursor:pointer"><div style="font-size:.55rem;color:var(--gr)">BESOIN</div><div style="font-size:1.1rem;font-weight:900;color:#1e40af">' + (besoin || '\u2014') + '</div></div>' +
+      '<div onclick="toggleCaddy(\'' + rowId + '\')" style="text-align:center;cursor:pointer"><div style="font-size:.55rem;color:var(--gr)">STOCK</div><div style="font-size:1.2rem;font-weight:900;color:var(--brown)">' + stock + '</div></div>' +
+      '<div onclick="toggleCaddy(\'' + rowId + '\')" style="text-align:center;cursor:pointer"><div style="font-size:.55rem;color:var(--gr)">CMD</div><div style="font-size:1.4rem;font-weight:900;color:' + cmdColor + '">' + cmdVal + '</div></div>' +
+    '</div>';
+  }
+
+  html += '<div style="padding:14px 0"><button onclick="marquerCommandePassee(\'' + inv.id + '\')" style="width:100%;background:linear-gradient(145deg,#ab47bc,#7b1fa2);color:#fff;border-radius:var(--r);padding:14px;font-weight:800;font-size:.95rem;box-shadow:0 4px 0 #6a1b9a">' +
+    'Marquer commande passee</button></div>';
+
+  container.innerHTML = html;
+};
+
+// ============================================
+// VJ AJUSTEMENT PAR FAMILLE
+// ============================================
+var vjAjustements = {}; // { surgeles: { PAINS: 10, VIENNOISERIES: -20 }, ... }
+
+// Familles par rayon
+var FAMILLES = {
+  surgeles: ['PAINS','SANDWICH','VIENNOISERIES','PATISSERIES','VIANDES','TRAITEUR','DIVERS'],
+  frais: ['INGREDIENT SANDWICH','CAFE & BOISSONS CHAUDES','FINITION','PATISSERIE','GLACES & GRANITES','EPICERIE','EMBALLAGES'],
+  boissons: ['BOISSONS','CONFISERIES']
+};
+
+async function loadVjAjustements() {
+  for (var ri = 0; ri < RAYONS.length; ri++) {
+    var type = RAYONS[ri].id;
+    try {
+      var ajDoc = await getDoc(doc(db, 'magasins', magasinId, 'config_commande', type));
+      if (ajDoc.exists() && ajDoc.data().vj_ajustements) {
+        vjAjustements[type] = ajDoc.data().vj_ajustements;
+      }
+    } catch(e) {}
+  }
+}
+
+window.toggleVjAjust = function() {
+  var panel = document.getElementById('vj-ajust-panel');
+  if (panel.style.display === 'none') {
+    panel.style.display = 'block';
+    renderVjAjustPanel();
+  } else {
+    panel.style.display = 'none';
+  }
+};
+
+function renderVjAjustPanel() {
+  var panel = document.getElementById('vj-ajust-panel');
+  var html = '<div class="card" style="border:3px solid #ce93d8;padding:14px">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">' +
+      '<div style="font-weight:900;font-size:.95rem;color:#7b1fa2">Ajustement VJ par famille</div>' +
+      '<button onclick="resetVjSliders()" style="padding:6px 12px;border-radius:10px;background:var(--rel);color:#991b1b;font-weight:800;font-size:.72rem">RAZ</button>' +
+    '</div>' +
+    '<div style="font-size:.75rem;color:var(--gr);margin-bottom:14px">Ajustez les ventes/jour par famille selon la saison, la meteo, etc.</div>';
+
+  for (var ri = 0; ri < RAYONS.length; ri++) {
+    var rayon = RAYONS[ri];
+    var familles = FAMILLES[rayon.id] || [];
+    var ajust = vjAjustements[rayon.id] || {};
+
+    html += '<div style="background:#' + rayon.color + '15;padding:8px 12px;border-radius:10px;margin-bottom:8px">' +
+      '<div style="font-weight:900;font-size:.85rem;color:#' + rayon.color + ';margin-bottom:8px">' + rayon.icon + ' ' + rayon.nom + '</div>';
+
+    for (var fi = 0; fi < familles.length; fi++) {
+      var fam = familles[fi];
+      var val = ajust[fam] || 0;
+      var valColor = val > 0 ? '#dc2626' : val < 0 ? '#2563eb' : 'var(--gr)';
+      html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' +
+        '<span style="font-size:.75rem;font-weight:800;color:var(--brown);min-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + fam + '</span>' +
+        '<input type="range" min="-30" max="30" step="5" value="' + val + '" data-rayon="' + rayon.id + '" data-fam="' + fam + '" class="vj-ajust-slider" oninput="onVjSlider(this)" style="flex:1;accent-color:#7b1fa2">' +
+        '<span id="vj-ajust-val-' + rayon.id + '-' + fi + '" style="min-width:40px;text-align:center;font-weight:900;font-size:.85rem;color:' + valColor + '">' + (val > 0 ? '+' : '') + val + '%</span>' +
+      '</div>';
+    }
+    html += '</div>';
+  }
+
+  html += '</div>';
+  panel.innerHTML = html;
+}
+
+window.onVjSlider = function(input) {
+  var rayonId = input.dataset.rayon;
+  var fam = input.dataset.fam;
+  var val = parseInt(input.value);
+  if (!vjAjustements[rayonId]) vjAjustements[rayonId] = {};
+  vjAjustements[rayonId][fam] = val;
+
+  // Update display
+  var valSpan = input.nextElementSibling;
+  if (valSpan) {
+    valSpan.textContent = (val > 0 ? '+' : '') + val + '%';
+    valSpan.style.color = val > 0 ? '#dc2626' : val < 0 ? '#2563eb' : 'var(--gr)';
+  }
+
+  // Sauvegarder dans Firestore
+  setDoc(doc(db, 'magasins', magasinId, 'config_commande', rayonId), {
+    vj_ajustements: vjAjustements[rayonId]
+  }, { merge: true });
+};
+
+window.resetVjSliders = function() {
+  vjAjustements = {};
+  for (var ri = 0; ri < RAYONS.length; ri++) {
+    setDoc(doc(db, 'magasins', magasinId, 'config_commande', RAYONS[ri].id), {
+      vj_ajustements: {}
+    }, { merge: true });
+  }
+  renderVjAjustPanel();
+};
+
+// Appliquer l'ajustement VJ à un produit
+function getAjustedVj(prodVj, rayonId, categorie) {
+  var ajust = vjAjustements[rayonId] || {};
+  var pct = ajust[categorie] || 0;
+  if (pct === 0) return prodVj;
+  return Math.round(prodVj * (1 + pct / 100) * 10) / 10;
+}
+
+// ============================================
+// CADDY MODE
+// ============================================
+window.toggleCaddy = function(rowId) {
+  var row = document.getElementById(rowId);
+  if (!row) return;
+  var check = row.querySelector('.caddy-check');
+  var isChecked = row.dataset.caddy === '1';
+  if (isChecked) {
+    row.dataset.caddy = '0'; row.style.filter = ''; row.style.opacity = '';
+    if (check) check.textContent = '\u25CB';
+  } else {
+    row.dataset.caddy = '1'; row.style.filter = caddyBlur; row.style.opacity = '0.3';
+    if (check) check.textContent = '\u2713';
+  }
+};
+
+// ============================================
+// MARQUER COMMANDE PASSEE
+// ============================================
+window.marquerCommandePassee = async function(cmdId) {
+  setSyncDot('syncing');
+  try {
+    await updateDoc(doc(db, 'magasins', magasinId, 'commandes', cmdId), { statut: 'passee' });
+    setSyncDot('ok');
+    renderCommandeInternal();
+  } catch(e) {
+    setSyncDot('error');
+    alert('Erreur: ' + e.message);
+  }
+};
+
+// ============================================
+// VUE HISTORIQUE
+// ============================================
+function getWeekNumber(dateStr) {
+  var d = new Date(dateStr);
+  d.setHours(0,0,0,0);
+  d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7);
+  var week1 = new Date(d.getFullYear(), 0, 4);
+  return Math.round(((d - week1) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7) + 1;
+}
+
+async function renderHistoriqueInternal() {
+  var container = document.getElementById('historique-content');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--gr)">Chargement...</div>';
+
+  try {
+    var q2 = query(collection(db, 'magasins', magasinId, 'commandes'), orderBy('createdAt', 'desc'), limit(100));
+    var snap = await getDocs(q2);
+    allCommandes = snap.docs.map(function(d) { return { id: d.id, ...d.data() }; });
+  } catch(e) { allCommandes = []; }
+
+  if (!allCommandes.length) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gr)"><div style="font-size:3rem">&#x1F4ED;</div><div style="font-weight:600;margin-top:8px">Aucun inventaire</div></div>';
+    return;
+  }
+
+  // Grouper par jour
+  var grouped = {};
+  var dayOrder = [];
+  for (var k = 0; k < allCommandes.length; k++) {
+    var inv = allCommandes[k];
+    var dayKey = inv.date || 'unknown';
+    if (!grouped[dayKey]) { grouped[dayKey] = []; dayOrder.push(dayKey); }
+    grouped[dayKey].push(inv);
+  }
+
+  // Grouper par semaine
+  var weeks = {};
+  var weekOrder = [];
+  for (var d = 0; d < dayOrder.length; d++) {
+    var dk = dayOrder[d];
+    var wn = getWeekNumber(dk);
+    var yr = dk.slice(0, 4);
+    var weekKey = yr + '-S' + (wn < 10 ? '0' : '') + wn;
+    if (!weeks[weekKey]) { weeks[weekKey] = []; weekOrder.push(weekKey); }
+    weeks[weekKey].push(dk);
+  }
+
+  var html = '';
+  for (var w = 0; w < weekOrder.length; w++) {
+    var wk = weekOrder[w];
+    var weekDays = weeks[wk];
+    var sNum = wk.split('-S')[1];
+    var weekId = 'week_' + w;
+    var isCurrentWeek = (w === 0);
+
+    html += '<div onclick="toggleCat(\'' + weekId + '\')" style="background:linear-gradient(135deg,#6b4c11,#6b4c11cc);color:#fff;padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:10px;border-radius:14px;margin:8px 0 4px 0;box-shadow:0 2px 8px rgba(0,0,0,.1)">' +
+      '<span id="arrow_' + weekId + '" style="font-size:1.1rem;transition:transform .2s;transform:rotate(' + (isCurrentWeek ? '90' : '0') + 'deg)">&#9654;</span>' +
+      '<span style="font-weight:900;font-size:1rem">Semaine ' + sNum + '</span>' +
+      '<span style="background:rgba(255,255,255,.2);color:#fff;border-radius:10px;padding:2px 10px;font-size:.72rem;font-weight:800;margin-left:auto">' + weekDays.length + ' jour' + (weekDays.length > 1 ? 's' : '') + '</span>' +
+    '</div>';
+
+    html += '<div id="' + weekId + '" style="display:' + (isCurrentWeek ? 'block' : 'none') + '">';
+    for (var dd = 0; dd < weekDays.length; dd++) {
+      var dayInvs = grouped[weekDays[dd]];
+      var allIcons = '';
+      var allUsers = [];
+      var allPassee = true;
+      for (var g = 0; g < dayInvs.length; g++) {
+        var di = dayInvs[g];
+        if (di.statut !== 'passee') allPassee = false;
+        if (allUsers.indexOf(di.userName) === -1) allUsers.push(di.userName);
+        if (di.rayonIcon && allIcons.indexOf(di.rayonIcon) === -1) allIcons += ' ' + di.rayonIcon;
+      }
+      var idsParam = dayInvs.map(function(d) { return d.id; }).join(',');
+      html += '<div onclick="ouvrirHistoriqueJour(\'' + idsParam + '\')" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;margin-bottom:6px;margin-left:4px;margin-right:4px;border-radius:var(--r);background:' + (allPassee ? 'var(--be)' : 'linear-gradient(145deg,#ab47bc,#7b1fa2)') + ';box-shadow:var(--sh)">' +
+        '<div><div style="font-size:.95rem;font-weight:900;color:' + (allPassee ? 'var(--brown)' : '#fff') + ';text-transform:capitalize">' + (dayInvs[0].dateStr || dayInvs[0].date) + '</div>' +
+        '<div style="font-size:.75rem;color:' + (allPassee ? 'var(--gr)' : '#fff') + ';opacity:.85;margin-top:2px">' + allUsers.join(', ') + ' \u00b7' + allIcons + ' \u00b7 ' + (allPassee ? 'Passee' : 'A passer') + '</div></div>' +
+        '<span style="color:' + (allPassee ? 'var(--gr)' : '#fff') + ';font-size:1.4rem;opacity:.8">\u203A</span></div>';
+    }
+    html += '</div>';
+  }
+  container.innerHTML = html;
+}
+window.renderHistorique = function() { renderHistoriqueInternal(); };
+
+window.toggleCat = function(catId) {
+  var el = document.getElementById(catId);
+  var arrow = document.getElementById('arrow_' + catId);
+  if (!el) return;
+  if (el.style.display === 'none') { el.style.display = 'block'; if (arrow) arrow.style.transform = 'rotate(90deg)'; }
+  else { el.style.display = 'none'; if (arrow) arrow.style.transform = 'rotate(0deg)'; }
+};
+
+// ============================================
+// HISTORIQUE JOUR DETAIL
+// ============================================
+window.ouvrirHistoriqueJour = function(idsStr) {
+  var ids = idsStr.split(',');
+  var dayInvs = allCommandes.filter(function(c) { return ids.indexOf(c.id) > -1; });
+  if (!dayInvs.length) return;
+  var container = document.getElementById('historique-content');
+
+  var html = '<button onclick="renderHistorique()" style="width:40px;height:40px;border-radius:50%;background:#f0e8d8;color:#6b4c11;font-size:18px;font-weight:900;border:none;box-shadow:0 2px 8px rgba(0,0,0,.1);display:flex;align-items:center;justify-content:center;margin-bottom:12px">&#8592;</button>' +
+    '<div style="background:linear-gradient(145deg,#9c27b0,#7b1fa2);border-radius:var(--r) var(--r) 0 0;padding:12px 16px">' +
+    '<div style="font-size:1.2rem;font-weight:900;color:#fff;text-transform:capitalize">' + (dayInvs[0].dateStr || dayInvs[0].date) + '</div></div>';
+
+  for (var di2 = 0; di2 < dayInvs.length; di2++) {
+    var inv = dayInvs[di2];
+    var rayon = RAYONS.find(function(r) { return r.id === inv.type; });
+    var isPassee = inv.statut === 'passee';
+
+    html += '<div style="background:var(--wh);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden;margin-top:12px">';
+    html += '<div style="background:' + (isPassee ? 'var(--be)' : 'linear-gradient(145deg,#ce93d8,#ab47bc)') + ';padding:10px 14px">' +
+      '<div style="font-weight:800;color:' + (isPassee ? 'var(--brown)' : '#fff') + ';font-size:.85rem">' + (inv.heure || '') + ' \u00b7 ' + (inv.userName || '') + ' \u00b7 ' + (inv.rayonIcon || '') + ' ' + (inv.rayonNom || inv.type) + ' \u00b7 ' + (inv.jours || 3) + 'j' + (isPassee ? ' \u00b7 \u2713 Passee' : '') + '</div></div>';
+
+    var lignes = (inv.lignes || []).slice().sort(function(a, b) { return (a.ordre_fournisseur || 999) - (b.ordre_fournisseur || 999); });
+    var rang = 0;
+    for (var pi = 0; pi < lignes.length; pi++) {
+      var p = lignes[pi];
+      if (p.a_commander <= 0 && p.stock <= 0) continue;
+      rang++;
+      var cmdColor = 'var(--gr)', cmdVal = '\u2014';
+      if (p.besoin > 0) {
+        if (p.a_commander <= 0) { cmdColor = '#6b4c11'; cmdVal = '\u2713 OK'; }
+        else { cmdColor = '#a855f7'; cmdVal = p.a_commander + (rayon && rayon.unite === 'cartons' ? ' ctn' : ''); }
+      }
+      html += '<div style="display:grid;grid-template-columns:20px 1fr 1fr 1fr 1fr 1.2fr;gap:4px;align-items:center;padding:4px 12px;border-bottom:1px solid #e5e7eb">' +
+        '<span style="font-size:.6rem;color:var(--gr);font-weight:700">' + rang + '</span>' +
+        '<span style="font-weight:700;font-size:.78rem;color:var(--brown);grid-column:2/4">' + p.nom + '</span>' +
+        '<div style="text-align:center"><div style="font-size:.55rem;color:var(--gr)">STOCK</div><div style="font-size:.85rem;font-weight:800;color:var(--brown)">' + p.stock + '</div></div>' +
+        '<div style="text-align:center"><div style="font-size:.55rem;color:var(--gr)">BESOIN</div><div style="font-size:.78rem;font-weight:700;color:#1e40af">' + (p.besoin || '\u2014') + '</div></div>' +
+        '<div style="text-align:center"><div style="font-size:.55rem;color:var(--gr)">CMD</div><div style="font-size:.85rem;font-weight:900;color:' + cmdColor + '">' + cmdVal + '</div></div>' +
+      '</div>';
+    }
+    html += '</div>';
+  }
+  container.innerHTML = html;
+};
+
+// ============================================
+// VUE PARAMS (admin)
+// ============================================
+function renderParamsInternal() {
+  var container = document.getElementById('params-content');
+  if (!container) return;
+  if (userRole !== 'admin') {
+    container.innerHTML = '<div style="text-align:center;padding:32px;color:var(--gr)"><div style="font-size:3rem">&#x1F512;</div><div style="font-weight:700;margin-top:8px">Acces admin uniquement</div></div>';
+    return;
+  }
+  // Bouton reconfigurer
+  container.innerHTML = '<div onclick="showWizard()" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:14px 16px;background:linear-gradient(145deg,#f3e5f5,#e9d5ff);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:14px">' +
+    '<span style="font-size:1.5rem">&#x2699;&#xFE0F;</span>' +
+    '<div style="flex:1"><div style="font-weight:900;font-size:.9rem;color:#7b1fa2">Reconfigurer mon magasin</div>' +
+    '<div style="font-size:.75rem;color:var(--gr);font-weight:700">Jours, produits, VJ, ordre stock</div></div>' +
+    '<span style="color:#7b1fa2;font-size:1.2rem">&#8250;</span></div>' +
+    '<div id="params-tab-content"></div>';
+  renderParamTabInternal();
+}
+
+function renderParamTabInternal() {
+  var container = document.getElementById('params-tab-content') || document.getElementById('params-content');
+  if (!container) return;
+  var selRayon = window._paramRayon || RAYONS[0].id;
+  window._paramRayon = selRayon;
+  var rayon = RAYONS.find(function(r) { return r.id === selRayon; });
+  if (!rayon) return;
+  var paramSort = window._paramSort || 'stock';
+
+  var btns = '';
+  for (var ri = 0; ri < RAYONS.length; ri++) {
+    var r = RAYONS[ri];
+    btns += '<button onclick="setParamRayon(\'' + r.id + '\')" style="padding:5px 10px;border-radius:20px;font-size:.78rem;font-weight:700;background:' + (selRayon === r.id ? '#' + r.color : 'var(--be)') + ';color:' + (selRayon === r.id ? '#fff' : 'var(--brown)') + '">' + r.icon + ' ' + r.nom + '</button>';
+  }
+
+  var sortedProds = rayon.produits.slice();
+  sortedProds.sort(function(a, b) {
+    var ra = paramSort === 'stock' ? (a.rangStock || 9999) : (a.rangFournisseur || 9999);
+    var rb = paramSort === 'stock' ? (b.rangStock || 9999) : (b.rangFournisseur || 9999);
+    return ra - rb;
+  });
+
+  var prodRows = '';
+  var activeCount = 0;
+  for (var pi = 0; pi < sortedProds.length; pi++) {
+    var p = sortedProds[pi];
+    if (p.actif === false) continue;
+    activeCount++;
+    var bubbleRang = paramSort === 'stock' ? p.rangStock : p.rangFournisseur;
+    var subInfo = (p.cond ? '<span style="color:#e67e22;font-weight:800">cond ' + p.cond + '</span>  ' : '') +
+      (p.vj ? '<span style="color:#7c3aed;font-weight:800">vj ' + p.vj + '</span>  ' : '') +
+      (p.stockMini > 0 ? '<span style="color:#f59e0b;font-weight:800">mini ' + p.stockMini + '</span>' : '');
+
+    prodRows += '<div class="param-prod-row" data-id="' + p.id + '">' +
+      '<div style="display:flex;align-items:center;gap:6px">' +
+        '<div style="min-width:32px;width:32px;height:32px;border-radius:8px;background:linear-gradient(145deg,#ab47bc,#7b1fa2);color:#fff;font-weight:900;font-size:.85rem;display:flex;align-items:center;justify-content:center;flex-shrink:0">' + (bubbleRang || '-') + '</div>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-weight:900;color:var(--brown);font-size:1rem">' + p.nom + '</div>' +
+          '<div style="font-size:.75rem;color:var(--gr)">' + subInfo + '</div>' +
+          '<div style="display:flex;gap:20px;margin-top:6px">' +
+            '<button onclick="editProd(\'' + p.id.replace(/'/g, "\\'") + '\',\'' + rayon.id + '\')" style="background:var(--bll);color:#1e40af;border-radius:10px;padding:8px 14px;font-size:.78rem;font-weight:800">Modifier</button>' +
+          '</div>' +
+        '</div>' +
+      '</div></div>';
+  }
+
+  container.innerHTML =
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">' + btns + '</div>' +
+    '<div style="display:flex;gap:6px;margin-bottom:10px">' +
+      '<button onclick="setParamSort(\'stock\')" style="flex:1;padding:8px;border-radius:10px;font-size:.78rem;font-weight:800;background:' + (paramSort === 'stock' ? '#7b1fa2' : 'var(--be)') + ';color:' + (paramSort === 'stock' ? '#fff' : 'var(--brown)') + '">Tri Stock</button>' +
+      '<button onclick="setParamSort(\'fournisseur\')" style="flex:1;padding:8px;border-radius:10px;font-size:.78rem;font-weight:800;background:' + (paramSort === 'fournisseur' ? '#7b1fa2' : 'var(--be)') + ';color:' + (paramSort === 'fournisseur' ? '#fff' : 'var(--brown)') + '">Tri Fournisseur</button>' +
+    '</div>' +
+    '<div class="card" style="padding:0;overflow:hidden">' +
+      '<div style="padding:10px 14px;background:#' + rayon.color + '15;border-bottom:1.5px solid var(--be)"><div style="font-weight:800;color:#' + rayon.color + '">' + rayon.icon + ' ' + rayon.nom + ' <span style="font-weight:600;font-size:.75rem;color:var(--gr)">(' + activeCount + ' actifs)</span></div></div>' +
+      prodRows +
+    '</div>';
+}
+
+window.setParamRayon = function(id) { window._paramRayon = id; window._paramSort = null; renderParamTabInternal(); };
+window.setParamSort = function(mode) { window._paramSort = mode; renderParamTabInternal(); };
+
+// ============================================
+// EDIT PROD (modal)
+// ============================================
+window.editProd = function(prodId, rayonId) {
+  var rayon = RAYONS.find(function(r) { return r.id === rayonId; });
+  if (!rayon) return;
+  var prod = rayon.produits.find(function(p) { return p.id === prodId; });
+  if (!prod) return;
+
+  var html =
+    '<div style="font-weight:800;font-size:1.1rem;color:var(--brown);margin-bottom:16px">Modifier le produit</div>' +
+    '<div style="display:flex;flex-direction:column;gap:10px">' +
+      '<div><label style="font-size:.78rem;font-weight:700;color:var(--gr)">Nom</label>' +
+        '<input id="ep-nom" value="' + (prod.nom || '').replace(/"/g, '&quot;') + '" style="width:100%;padding:10px;border:2px solid var(--be);border-radius:8px;background:var(--goldbg);color:var(--brown);font-size:.9rem;font-weight:700"/></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+        '<div><label style="font-size:.78rem;font-weight:700;color:var(--gr)">Conditionnement</label>' +
+          '<input id="ep-cond" type="number" value="' + (prod.cond || '') + '" style="width:100%;padding:10px;border:2px solid var(--be);border-radius:8px;background:var(--goldbg);color:var(--brown);font-size:.9rem" placeholder="ex: 24"/></div>' +
+        '<div><label style="font-size:.78rem;font-weight:700;color:var(--gr)">Ventes/jour</label>' +
+          '<input id="ep-vj" type="number" step="0.1" value="' + (prod.vj || '') + '" style="width:100%;padding:10px;border:2px solid var(--be);border-radius:8px;background:var(--goldbg);color:var(--brown);font-size:.9rem" placeholder="ex: 5.2"/></div>' +
+      '</div>' +
+      '<div><label style="font-size:.78rem;font-weight:700;color:#e67e22">Stock mini</label>' +
+        '<input id="ep-mini" type="number" min="0" value="' + (prod.stockMini || '') + '" style="width:100%;padding:10px;border:2px solid #e67e22;border-radius:8px;background:#fef9f3;color:#e67e22;font-size:.9rem;font-weight:800" placeholder="ex: 1"/></div>' +
+      '<div style="display:flex;gap:8px;margin-top:6px">' +
+        '<button onclick="closeModal()" style="flex:1;background:var(--be);color:var(--brown);font-weight:800;padding:14px;border-radius:var(--r)">Annuler</button>' +
+        '<button onclick="saveEditProd(\'' + prodId + '\',\'' + rayonId + '\')" style="flex:1;background:linear-gradient(145deg,#ab47bc,#7b1fa2);color:#fff;font-weight:800;padding:14px;border-radius:var(--r);box-shadow:0 4px 0 #6a1b9a">Enregistrer</button>' +
+      '</div>' +
+    '</div>';
+  openModal(html);
+};
+
+window.saveEditProd = async function(prodId, rayonId) {
+  var rayon = RAYONS.find(function(r) { return r.id === rayonId; });
+  if (!rayon) return;
+  var prod = rayon.produits.find(function(p) { return p.id === prodId; });
+  if (!prod) return;
+
+  var vjEl = document.getElementById('ep-vj');
+  var condEl = document.getElementById('ep-cond');
+  var miniEl = document.getElementById('ep-mini');
+  var vj = vjEl && vjEl.value ? parseFloat(vjEl.value) : null;
+  var cond = condEl && condEl.value ? parseInt(condEl.value) : null;
+  var mini = miniEl && miniEl.value !== '' ? parseInt(miniEl.value) : null;
+
+  // Sauvegarder VJ dans config perso du magasin
+  if (vj !== null) {
+    prod.vj = vj;
+    await setDoc(doc(db, 'magasins', magasinId, 'config_commande', rayonId, 'ventes_jour', prodId), { valeur: vj });
+  }
+  if (cond !== null) prod.cond = cond;
+  if (mini !== null) prod.stockMini = mini;
+
+  closeModal();
+  if (activeRayonId) renderSaisie(activeRayonId);
+  renderParamTabInternal();
+};
+
+// ============================================
+// VUE VJ
+// ============================================
+var _vjRayon = null;
+
+function renderVjInternal() {
+  var container = document.getElementById('vj-content');
+  if (!container) return;
+
+  var html = '<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">';
+  for (var ri = 0; ri < RAYONS.length; ri++) {
+    var r = RAYONS[ri];
+    var isActive = _vjRayon === r.id;
+    html += '<button onclick="selectVjRayon(\'' + r.id + '\')" style="flex:1;min-width:80px;padding:10px;border-radius:12px;border:2px solid #' + r.color + ';background:' + (isActive ? '#' + r.color : '#fff') + ';color:' + (isActive ? '#fff' : '#' + r.color) + ';font-weight:800;font-size:.82rem;cursor:pointer;font-family:var(--font)">' + r.icon + ' ' + r.nom + '</button>';
+  }
+  html += '</div>';
+
+  if (!_vjRayon) {
+    html += '<div style="text-align:center;color:var(--gr);padding:30px;font-weight:700">Choisissez un rayon</div>';
+    container.innerHTML = html;
+    return;
+  }
+
+  var rayon = RAYONS.find(function(r) { return r.id === _vjRayon; });
+  if (!rayon) return;
+
+  var produits = rayon.produits.filter(function(p) { return p.actif !== false; });
+
+  html += '<div style="display:grid;grid-template-columns:1.4fr .7fr .7fr .5fr;gap:4px;padding:6px 10px;background:#1e293b;border-radius:10px 10px 0 0">' +
+    '<div style="color:#fff;font-weight:800;font-size:.7rem">Produit</div>' +
+    '<div style="color:#fff;font-weight:800;font-size:.7rem;text-align:center">Unites/j</div>' +
+    '<div style="color:#fff;font-weight:800;font-size:.7rem;text-align:center">Colis/j</div>' +
+    '<div style="color:#fff;font-weight:800;font-size:.7rem;text-align:center">Actuel</div>' +
+  '</div>';
+
+  for (var pi = 0; pi < produits.length; pi++) {
+    var p = produits[pi];
+    var currentVj = p.vj || 0;
+    var cond = p.cond || 1;
+    var bg = pi % 2 === 0 ? '#fff' : '#faf7f0';
+    var hasCond = cond > 1;
+
+    html += '<div style="display:grid;grid-template-columns:1.4fr .7fr .7fr .5fr;gap:4px;align-items:center;padding:8px 10px;background:' + bg + ';border-bottom:1px solid #f0e8d8">' +
+      '<div><div style="font-weight:800;font-size:.78rem;color:var(--brown)">' + p.nom + '</div>' + (hasCond ? '<div style="font-size:.6rem;color:var(--gr)">x' + cond + '</div>' : '') + '</div>' +
+      '<div style="text-align:center"><input type="number" step="0.1" inputmode="decimal" data-pid="' + p.id + '" data-cond="' + cond + '" class="vj-unit-input" style="width:55px;padding:6px 3px;border:2px solid #e5e7eb;border-radius:8px;text-align:center;font-weight:800;font-size:.82rem;font-family:var(--font);color:#1e40af;background:#f0f9ff" onfocus="this.select()"></div>' +
+      '<div style="text-align:center">' + (hasCond ? '<input type="number" step="0.01" inputmode="decimal" data-pid="' + p.id + '" data-cond="' + cond + '" class="vj-carton-input" style="width:55px;padding:6px 3px;border:2px solid #e5e7eb;border-radius:8px;text-align:center;font-weight:800;font-size:.82rem;font-family:var(--font);color:#7b1fa2;background:#faf5ff" onfocus="this.select()">' : '<span style="font-size:.7rem;color:#ccc">\u2014</span>') + '</div>' +
+      '<div style="text-align:center;font-size:.75rem;font-weight:700;color:var(--gr)">' + (currentVj || '\u2014') + '</div>' +
+    '</div>';
+  }
+
+  html += '<div style="padding:14px;text-align:center">' +
+    '<button onclick="vjSaveAll()" style="padding:12px 30px;border-radius:12px;border:none;background:linear-gradient(145deg,#22c55e,#16a34a);color:#fff;font-weight:900;font-size:.95rem;cursor:pointer;font-family:var(--font);box-shadow:0 4px 0 #15803d">Terminer</button>' +
+    '<div style="margin-top:8px;color:var(--gr);font-size:.72rem;font-weight:700">' + produits.length + ' produits</div></div>';
+
+  container.innerHTML = html;
+}
+
+window.selectVjRayon = function(id) { _vjRayon = id; renderVjInternal(); };
+
+window.vjSaveAll = async function() {
+  if (!_vjRayon) return;
+  var rayon = RAYONS.find(function(r) { return r.id === _vjRayon; });
+  if (!rayon) return;
+  var inputs = document.querySelectorAll('.vj-unit-input');
+  setSyncDot('syncing');
+  var batch = writeBatch(db);
+  var count = 0;
+  inputs.forEach(function(inp) {
+    var val = inp.value.trim();
+    if (val === '') return;
+    var pid = inp.dataset.pid;
+    var vj = parseFloat(val);
+    if (isNaN(vj)) return;
+    var prod = rayon.produits.find(function(p) { return p.id === pid; });
+    if (prod) prod.vj = vj;
+    batch.set(doc(db, 'magasins', magasinId, 'config_commande', _vjRayon, 'ventes_jour', pid), { valeur: vj });
+    count++;
+  });
+  if (count > 0) {
+    try {
+      await batch.commit();
+      setSyncDot('ok');
+      alert(count + ' VJ sauvegardees !');
+    } catch(e) {
+      setSyncDot('error');
+      alert('Erreur: ' + e.message);
+    }
+  }
+  renderVjInternal();
+};
+
+// ============================================
+// MODAL
+// ============================================
+function openModal(html) {
+  document.getElementById('modal-content').innerHTML = html;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+window.closeModal = function() {
+  document.getElementById('modal-overlay').classList.remove('open');
+};
+
+// ============================================
+// WIZARD CONFIG
+// ============================================
+var wizardConfig = {}; // { jours_done, produits_done, vj_done, ordre_done }
+var wizardRayon = 'surgeles'; // rayon selectionne dans le wizard
+
+async function checkWizard() {
+  // Charger la config wizard du magasin
+  for (var ri = 0; ri < RAYONS.length; ri++) {
+    var type = RAYONS[ri].id;
+    try {
+      var cfgDoc = await getDoc(doc(db, 'magasins', magasinId, 'config_commande', type));
+      if (cfgDoc.exists()) {
+        var d = cfgDoc.data();
+        if (!wizardConfig[type]) wizardConfig[type] = {};
+        wizardConfig[type].jours_done = d.jours_done || false;
+        wizardConfig[type].produits_done = d.produits_done || false;
+        wizardConfig[type].vj_done = d.vj_done || false;
+        wizardConfig[type].ordre_done = d.ordre_done || false;
+        wizardConfig[type].jours_commande = d.jours_commande || [];
+        wizardConfig[type].jours_map = d.jours_map || {};
+      }
+    } catch(e) {}
+  }
+
+  var complete = isWizardComplete();
+  if (complete) {
+    showMainApp();
+  } else {
+    showWizard();
+  }
+}
+
+function isWizardComplete() {
+  for (var ri = 0; ri < RAYONS.length; ri++) {
+    var cfg = wizardConfig[RAYONS[ri].id] || {};
+    if (!cfg.jours_done || !cfg.produits_done || !cfg.vj_done || !cfg.ordre_done) return false;
+  }
+  return true;
+}
+
+function countWizardDone() {
+  var done = 0;
+  var total = RAYONS.length * 4;
+  for (var ri = 0; ri < RAYONS.length; ri++) {
+    var cfg = wizardConfig[RAYONS[ri].id] || {};
+    if (cfg.jours_done) done++;
+    if (cfg.produits_done) done++;
+    if (cfg.vj_done) done++;
+    if (cfg.ordre_done) done++;
+  }
+  return { done: done, total: total };
+}
+
+function showMainApp() {
+  document.getElementById('wizard-screen').style.display = 'none';
+  document.getElementById('wizard-page').style.display = 'none';
+  document.getElementById('main-tabs').style.display = '';
+  document.getElementById('tabs-admin').style.display = userRole === 'admin' ? '' : 'none';
+  document.querySelectorAll('#view-inventaire,#view-commande,#view-historique,#view-params,#view-vj').forEach(function(el) { el.style.display = ''; });
+  switchTab('inventaire');
+}
+
+window.showWizard = showWizard;
+function showWizard() {
+  document.getElementById('wizard-screen').style.display = 'block';
+  document.getElementById('wizard-page').style.display = 'none';
+  document.getElementById('main-tabs').style.display = 'none';
+  document.getElementById('tabs-admin').style.display = 'none';
+  document.querySelectorAll('#view-inventaire,#view-commande,#view-historique,#view-params,#view-vj').forEach(function(el) { el.style.display = 'none'; });
+  renderWizardSteps();
+}
+
+function renderWizardSteps() {
+  var progress = countWizardDone();
+  var pct = Math.round(progress.done / progress.total * 100);
+  document.getElementById('wizard-progress-bar').style.width = pct + '%';
+  document.getElementById('wizard-progress-text').textContent = progress.done + ' / ' + progress.total + ' (' + pct + '%)';
+
+  // Check each step across all rayons
+  var steps = ['jours_done', 'produits_done', 'vj_done', 'ordre_done'];
+  var stepNames = ['Jours', 'Produits', 'VJ', 'Ordre'];
+  for (var s = 0; s < 4; s++) {
+    var allDone = true;
+    var doneRayons = [];
+    for (var ri = 0; ri < RAYONS.length; ri++) {
+      var cfg = wizardConfig[RAYONS[ri].id] || {};
+      if (cfg[steps[s]]) doneRayons.push(RAYONS[ri].icon);
+      else allDone = false;
+    }
+    var icon = document.getElementById('wz-step' + (s+1) + '-icon');
+    var card = document.getElementById('wz-step' + (s+1) + '-card');
+    var sub = document.getElementById('wz-step' + (s+1) + '-sub');
+    if (allDone) {
+      icon.textContent = '\u2713';
+      icon.style.background = '#22c55e';
+      icon.style.color = '#fff';
+      card.style.borderColor = '#22c55e';
+      sub.textContent = '\u2713 Configure pour tous les rayons';
+    } else if (doneRayons.length > 0) {
+      icon.textContent = (s+1);
+      icon.style.background = '#f59e0b';
+      icon.style.color = '#fff';
+      card.style.borderColor = '#f59e0b';
+      sub.textContent = doneRayons.join(' ') + ' OK — reste ' + (RAYONS.length - doneRayons.length) + ' rayon(s)';
+    } else {
+      icon.textContent = (s+1);
+      icon.style.background = 'var(--be)';
+      icon.style.color = 'var(--gr)';
+      card.style.borderColor = 'var(--be)';
+    }
+  }
+
+  // Show skip button if at least some config done
+  var skipBtn = document.getElementById('wz-skip-btn');
+  if (progress.done > 0) skipBtn.style.display = 'block';
+  else skipBtn.style.display = 'none';
+}
+
+window.skipWizard = function() {
+  showMainApp();
+};
+
+// ============================================
+// WIZARD STEP PAGES
+// ============================================
+window.openWizardStep = function(step) {
+  document.getElementById('wizard-screen').style.display = 'none';
+  document.getElementById('wizard-page').style.display = 'block';
+  var titles = ['', 'Jours de commande', 'Produits actifs', 'Ventes / jour', 'Liste stock'];
+  document.getElementById('wizard-page-title').textContent = titles[step];
+  var content = document.getElementById('wizard-page-content');
+
+  if (step === 1) renderWzJours(content);
+  if (step === 2) renderWzProduits(content);
+  if (step === 3) renderWzVj(content);
+  if (step === 4) renderWzOrdre(content);
+};
+
+window.closeWizardStep = function() {
+  document.getElementById('wizard-page').style.display = 'none';
+  showWizard();
+};
+
+// -- STEP 1: JOURS DE COMMANDE --
+var joursNoms = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
+
+function renderWzJours(container) {
+  var html = '';
+
+  for (var ri = 0; ri < RAYONS.length; ri++) {
+    var rayon = RAYONS[ri];
+    var cfg = wizardConfig[rayon.id] || {};
+    var joursCommande = cfg.jours_commande || [];
+    var joursMap = cfg.jours_map || {}; // { "Dimanche": 5, "Mercredi": 6 }
+
+    html += '<div class="card" style="border:3px solid #' + rayon.color + ';margin-bottom:14px">' +
+      '<div style="font-weight:900;font-size:1rem;color:#' + rayon.color + ';margin-bottom:10px">' + rayon.icon + ' ' + rayon.nom + '</div>' +
+      '<div style="font-size:.82rem;font-weight:700;color:var(--brown);margin-bottom:8px">Quels jours commandez-vous ?</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px" id="wz-jours-btns-' + rayon.id + '">';
+    for (var j = 0; j < joursNoms.length; j++) {
+      var sel = joursCommande.indexOf(joursNoms[j]) > -1;
+      html += '<button onclick="wzToggleJour(\'' + rayon.id + '\',\'' + joursNoms[j] + '\')" style="padding:8px 12px;border-radius:10px;font-size:.78rem;font-weight:800;background:' + (sel ? '#7b1fa2' : 'var(--be)') + ';color:' + (sel ? '#fff' : 'var(--brown)') + '">' + joursNoms[j] + '</button>';
+    }
+    html += '</div>';
+
+    // Pour chaque jour sélectionné, afficher un input "jours à tenir"
+    if (joursCommande.length > 0) {
+      html += '<div style="font-size:.82rem;font-weight:700;color:var(--brown);margin-bottom:8px">Combien de jours a tenir pour chaque commande ?</div>';
+      for (var jc = 0; jc < joursCommande.length; jc++) {
+        var jour = joursCommande[jc];
+        var val = joursMap[jour] || '';
+        html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:8px 12px;background:var(--goldbg);border-radius:10px">' +
+          '<span style="font-size:.88rem;font-weight:900;color:#7b1fa2;min-width:90px">' + jour + '</span>' +
+          '<span style="font-size:.82rem;color:var(--gr)">&#8594;</span>' +
+          '<input type="number" min="1" max="14" value="' + val + '" data-rayon="' + rayon.id + '" data-jour="' + jour + '" class="wz-jours-map-input" style="width:60px;height:40px;border:3px solid var(--be);border-radius:10px;font-size:1.1rem;font-weight:900;text-align:center;color:var(--brown);background:var(--wh);font-family:var(--font)" inputmode="numeric" placeholder="?" onblur="wzSaveOneJour(this)">' +
+          '<span style="font-size:.82rem;color:var(--gr)">jours</span>' +
+        '</div>';
+      }
+    }
+    html += '</div>';
+  }
+
+  html += '<button onclick="wzSaveJours()" class="btn-p" style="margin-top:8px">&#10003; Valider les jours</button>';
+  container.innerHTML = html;
+}
+
+window.wzToggleJour = function(rayonId, jour) {
+  if (!wizardConfig[rayonId]) wizardConfig[rayonId] = {};
+  if (!wizardConfig[rayonId].jours_commande) wizardConfig[rayonId].jours_commande = [];
+  var arr = wizardConfig[rayonId].jours_commande;
+  var idx = arr.indexOf(jour);
+  if (idx > -1) arr.splice(idx, 1);
+  else arr.push(jour);
+  // Sauvegarder immédiatement les jours cochés
+  setDoc(doc(db, 'magasins', magasinId, 'config_commande', rayonId), {
+    jours_commande: wizardConfig[rayonId].jours_commande
+  }, { merge: true });
+  // Re-render pour afficher/masquer les inputs jours à tenir
+  renderWzJours(document.getElementById('wizard-page-content'));
+};
+
+// Sauvegarde immédiate d'un jour à tenir au blur
+window.wzSaveOneJour = function(input) {
+  var rayonId = input.dataset.rayon;
+  var jour = input.dataset.jour;
+  var val = parseInt(input.value);
+  if (!val || val < 1) return;
+  if (!wizardConfig[rayonId]) wizardConfig[rayonId] = {};
+  if (!wizardConfig[rayonId].jours_map) wizardConfig[rayonId].jours_map = {};
+  wizardConfig[rayonId].jours_map[jour] = val;
+  // Sauvegarder dans Firestore
+  setDoc(doc(db, 'magasins', magasinId, 'config_commande', rayonId), {
+    jours_map: wizardConfig[rayonId].jours_map
+  }, { merge: true });
+  input.style.borderColor = '#22c55e';
+  setTimeout(function() { input.style.borderColor = 'var(--be)'; }, 800);
+};
+
+window.wzSaveJours = async function() {
+  setSyncDot('syncing');
+  for (var ri = 0; ri < RAYONS.length; ri++) {
+    var rayon = RAYONS[ri];
+    var cfg = wizardConfig[rayon.id] || {};
+    var joursCommande = cfg.jours_commande || [];
+    if (joursCommande.length === 0) continue;
+
+    // Lire les inputs jours_map
+    var joursMap = {};
+    var allFilled = true;
+    var inputs = document.querySelectorAll('.wz-jours-map-input[data-rayon="' + rayon.id + '"]');
+    inputs.forEach(function(inp) {
+      var jour = inp.dataset.jour;
+      var val = parseInt(inp.value);
+      if (val > 0) joursMap[jour] = val;
+      else allFilled = false;
+    });
+
+    if (allFilled && Object.keys(joursMap).length === joursCommande.length) {
+      if (!wizardConfig[rayon.id]) wizardConfig[rayon.id] = {};
+      wizardConfig[rayon.id].jours_map = joursMap;
+      wizardConfig[rayon.id].jours_done = true;
+      await setDoc(doc(db, 'magasins', magasinId, 'config_commande', rayon.id), {
+        jours_commande: joursCommande, jours_map: joursMap, jours_done: true
+      }, { merge: true });
+    }
+  }
+  setSyncDot('ok');
+  closeWizardStep();
+};
+
+// -- STEP 2: PRODUITS ACTIFS --
+function renderWzProduits(container) {
+  var html = '<div style="display:flex;gap:6px;margin-bottom:14px">';
+  for (var ri = 0; ri < RAYONS.length; ri++) {
+    var r = RAYONS[ri];
+    html += '<button onclick="wzSetProdRayon(\'' + r.id + '\')" id="wz-prod-tab-' + r.id + '" style="flex:1;padding:10px;border-radius:12px;border:2px solid #' + r.color + ';background:' + (wizardRayon === r.id ? '#' + r.color : '#fff') + ';color:' + (wizardRayon === r.id ? '#fff' : '#' + r.color) + ';font-weight:800;font-size:.82rem">' + r.icon + ' ' + r.nom + '</button>';
+  }
+  html += '</div>';
+
+  var rayon = RAYONS.find(function(r) { return r.id === wizardRayon; });
+  if (!rayon) { container.innerHTML = html; return; }
+
+  // Charger produits desactives du magasin
+  var prods = rayon.produits;
+  var activeCount = prods.filter(function(p) { return p.actif !== false; }).length;
+
+  html += '<div style="font-size:.82rem;color:var(--gr);font-weight:700;margin-bottom:10px">' + activeCount + ' / ' + prods.length + ' produits actifs — desactivez ceux que vous ne commandez pas</div>';
+  html += '<div class="card" style="padding:0;overflow:hidden;max-height:60vh;overflow-y:auto">';
+
+  for (var pi = 0; pi < prods.length; pi++) {
+    var p = prods[pi];
+    var isActive = p.actif !== false;
+    html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--be);background:' + (isActive ? '#fff' : 'var(--grl)') + '" id="wz-prod-' + p.id + '">' +
+      '<div style="flex:1;min-width:0"><div style="font-weight:800;font-size:.88rem;color:' + (isActive ? 'var(--brown)' : 'var(--gr)') + '">' + p.nom + '</div>' +
+      '<div style="font-size:.7rem;color:var(--gr)">' + (p.conditionnement || '') + '</div></div>' +
+      '<button onclick="wzToggleProd(\'' + p.id.replace(/'/g, "\\'") + '\')" style="padding:8px 14px;border-radius:10px;font-size:.78rem;font-weight:800;background:' + (isActive ? 'var(--gnl)' : 'var(--rel)') + ';color:' + (isActive ? '#166534' : '#991b1b') + '">' + (isActive ? 'Actif' : 'Off') + '</button>' +
+    '</div>';
+  }
+
+  html += '</div>';
+  html += '<button onclick="wzValidateProduits()" class="btn-p" style="margin-top:14px">&#10003; Valider les produits</button>';
+  container.innerHTML = html;
+}
+
+window.wzSetProdRayon = function(id) {
+  wizardRayon = id;
+  renderWzProduits(document.getElementById('wizard-page-content'));
+};
+
+window.wzToggleProd = function(prodId) {
+  var rayon = RAYONS.find(function(r) { return r.id === wizardRayon; });
+  if (!rayon) return;
+  var prod = rayon.produits.find(function(p) { return p.id === prodId; });
+  if (!prod) return;
+  prod.actif = prod.actif === false ? true : false;
+  var isActive = prod.actif !== false;
+  // Sauvegarde immédiate dans Firestore
+  setDoc(doc(db, 'magasins', magasinId, 'config_commande', wizardRayon, 'produits_inactifs', prodId), { actif: isActive });
+  // Mettre à jour la ligne sans re-render
+  var row = document.getElementById('wz-prod-' + prodId);
+  if (row) {
+    row.style.background = isActive ? '#fff' : 'var(--grl)';
+    var nomEl = row.querySelector('div > div:first-child');
+    if (nomEl) nomEl.style.color = isActive ? 'var(--brown)' : 'var(--gr)';
+    var btn = row.querySelector('button');
+    if (btn) {
+      btn.textContent = isActive ? 'Actif' : 'Off';
+      btn.style.background = isActive ? 'var(--gnl)' : 'var(--rel)';
+      btn.style.color = isActive ? '#166534' : '#991b1b';
+    }
+  }
+  // Mettre à jour le compteur
+  var activeCount = rayon.produits.filter(function(p) { return p.actif !== false; }).length;
+  var counterEl = document.querySelector('#wizard-page-content > div:nth-child(2)');
+  if (counterEl && counterEl.textContent.indexOf('produits actifs') > -1) {
+    counterEl.textContent = activeCount + ' / ' + rayon.produits.length + ' produits actifs — desactivez ceux que vous ne commandez pas';
+  }
+};
+
+window.wzValidateProduits = async function() {
+  setSyncDot('syncing');
+  for (var ri = 0; ri < RAYONS.length; ri++) {
+    var rayon = RAYONS[ri];
+    var batch = writeBatch(db);
+    var inactiveCount = 0;
+    for (var pi = 0; pi < rayon.produits.length; pi++) {
+      var p = rayon.produits[pi];
+      if (p.actif === false) {
+        batch.set(doc(db, 'magasins', magasinId, 'config_commande', rayon.id, 'produits_inactifs', p.id), { actif: false });
+        inactiveCount++;
+      }
+    }
+    if (!wizardConfig[rayon.id]) wizardConfig[rayon.id] = {};
+    wizardConfig[rayon.id].produits_done = true;
+    batch.set(doc(db, 'magasins', magasinId, 'config_commande', rayon.id), { produits_done: true }, { merge: true });
+    await batch.commit();
+  }
+  setSyncDot('ok');
+  closeWizardStep();
+};
+
+// -- STEP 3: VENTES / JOUR --
+function renderWzVj(container) {
+  var html = '<div onclick="location.href=\'import-vj-commande.html\'" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:14px 16px;background:linear-gradient(145deg,#f3e5f5,#e9d5ff);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:14px">' +
+    '<span style="font-size:1.5rem">&#128202;</span>' +
+    '<div style="flex:1"><div style="font-weight:900;font-size:.9rem;color:#7b1fa2">Importer mes VJ depuis un fichier</div>' +
+    '<div style="font-size:.72rem;color:var(--gr);font-weight:700">Excel Stocks Optimaux, PDF Etat de fab, pertes...</div></div>' +
+    '<span style="color:#7b1fa2;font-size:1.2rem">&#8250;</span></div>';
+
+  html += '<div style="font-size:.82rem;color:var(--gr);font-weight:700;margin-bottom:10px;text-align:center">— ou saisie manuelle —</div>';
+
+  html += '<div style="display:flex;gap:6px;margin-bottom:14px">';
+  for (var ri = 0; ri < RAYONS.length; ri++) {
+    var r = RAYONS[ri];
+    html += '<button onclick="wzSetVjRayon(\'' + r.id + '\')" style="flex:1;padding:10px;border-radius:12px;border:2px solid #' + r.color + ';background:' + (wizardRayon === r.id ? '#' + r.color : '#fff') + ';color:' + (wizardRayon === r.id ? '#fff' : '#' + r.color) + ';font-weight:800;font-size:.82rem">' + r.icon + ' ' + r.nom + '</button>';
+  }
+  html += '</div>';
+
+  var rayon = RAYONS.find(function(r) { return r.id === wizardRayon; });
+  if (!rayon) { container.innerHTML = html; return; }
+
+  var prods = rayon.produits.filter(function(p) { return p.actif !== false; });
+
+  html += '<div style="display:grid;grid-template-columns:1.4fr .7fr .7fr .5fr;gap:4px;padding:6px 10px;background:#1e293b;border-radius:10px 10px 0 0">' +
+    '<div style="color:#fff;font-weight:800;font-size:.7rem">Produit</div>' +
+    '<div style="color:#fff;font-weight:800;font-size:.7rem;text-align:center">Unites/j</div>' +
+    '<div style="color:#fff;font-weight:800;font-size:.7rem;text-align:center">Colis/j</div>' +
+    '<div style="color:#fff;font-weight:800;font-size:.7rem;text-align:center">Actuel</div>' +
+  '</div>';
+
+  for (var pi = 0; pi < prods.length; pi++) {
+    var p = prods[pi];
+    var cond = p.cond || 1;
+    var bg = pi % 2 === 0 ? '#fff' : '#faf7f0';
+    var hasCond = cond > 1;
+    var currentVj = p.vj || 0;
+
+    html += '<div style="display:grid;grid-template-columns:1.4fr .7fr .7fr .5fr;gap:4px;align-items:center;padding:8px 10px;background:' + bg + ';border-bottom:1px solid #f0e8d8">' +
+      '<div><div style="font-weight:800;font-size:.78rem;color:var(--brown)">' + p.nom + '</div><div style="font-size:.58rem;color:#b0b0b0;font-weight:600">' + (p.ref || p.id) + (hasCond ? ' · x' + cond : '') + '</div></div>' +
+      '<div style="text-align:center"><input type="number" step="0.1" inputmode="decimal" data-pid="' + p.id + '" data-cond="' + cond + '" class="wz-vj-unit" style="width:55px;padding:6px 3px;border:2px solid #e5e7eb;border-radius:8px;text-align:center;font-weight:800;font-size:.82rem;font-family:var(--font);color:#1e40af;background:#f0f9ff" onfocus="this.select()" oninput="wzSyncVjUnit(this)" onblur="wzSaveOneVj(this)"></div>' +
+      '<div style="text-align:center">' + (hasCond ? '<input type="number" step="0.01" inputmode="decimal" data-pid="' + p.id + '" data-cond="' + cond + '" class="wz-vj-carton" style="width:55px;padding:6px 3px;border:2px solid #e5e7eb;border-radius:8px;text-align:center;font-weight:800;font-size:.82rem;font-family:var(--font);color:#7b1fa2;background:#faf5ff" onfocus="this.select()" oninput="wzSyncVjCarton(this)" onblur="wzSaveOneVj(this)">' : '<span style="font-size:.7rem;color:#ccc">\u2014</span>') + '</div>' +
+      '<div style="text-align:center;font-size:.75rem;font-weight:700;color:var(--gr)">' + (currentVj || '\u2014') + '</div>' +
+    '</div>';
+  }
+
+  html += '<button onclick="wzSaveAllVj()" class="btn-p" style="margin-top:14px">&#10003; Valider les VJ</button>';
+  container.innerHTML = html;
+}
+
+// Sauvegarder les VJ en mémoire depuis les inputs avant de changer de rayon
+function wzCaptureVjInputs() {
+  var rayon = RAYONS.find(function(r) { return r.id === wizardRayon; });
+  if (!rayon) return;
+  var inputs = document.querySelectorAll('.wz-vj-unit');
+  inputs.forEach(function(inp) {
+    var val = inp.value.trim();
+    if (val === '') return;
+    var pid = inp.dataset.pid;
+    var vj = parseFloat(val);
+    if (isNaN(vj)) return;
+    var prod = rayon.produits.find(function(p) { return p.id === pid; });
+    if (prod) prod.vj = vj;
+  });
+}
+
+window.wzSetVjRayon = function(id) {
+  wzCaptureVjInputs();
+  wizardRayon = id;
+  renderWzVj(document.getElementById('wizard-page-content'));
+};
+
+window.wzSyncVjUnit = function(input) {
+  var cond = parseFloat(input.dataset.cond) || 1;
+  var val = parseFloat(input.value);
+  var pid = input.dataset.pid;
+  if (cond > 1) {
+    var cartonInput = document.querySelector('.wz-vj-carton[data-pid="' + pid + '"]');
+    if (cartonInput && !isNaN(val)) cartonInput.value = Math.round(val / cond * 100) / 100;
+    else if (cartonInput) cartonInput.value = '';
+  }
+};
+
+window.wzSyncVjCarton = function(input) {
+  var cond = parseFloat(input.dataset.cond) || 1;
+  var val = parseFloat(input.value);
+  var pid = input.dataset.pid;
+  var unitInput = document.querySelector('.wz-vj-unit[data-pid="' + pid + '"]');
+  if (unitInput && !isNaN(val)) unitInput.value = Math.round(val * cond * 10) / 10;
+  else if (unitInput) unitInput.value = '';
+};
+
+// Sauvegarde immédiate d'une VJ au blur
+window.wzSaveOneVj = function(input) {
+  var pid = input.dataset.pid;
+  // Récupérer la valeur en unités (toujours depuis l'input unité)
+  var unitInput = document.querySelector('.wz-vj-unit[data-pid="' + pid + '"]');
+  if (!unitInput) return;
+  var val = unitInput.value.trim();
+  if (val === '') return;
+  var vj = parseFloat(val);
+  if (isNaN(vj) || vj <= 0) return;
+  var rayon = RAYONS.find(function(r) { return r.id === wizardRayon; });
+  if (!rayon) return;
+  var prod = rayon.produits.find(function(p) { return p.id === pid; });
+  if (prod) prod.vj = vj;
+  // Sauvegarder dans Firestore
+  setDoc(doc(db, 'magasins', magasinId, 'config_commande', wizardRayon, 'ventes_jour', pid), { valeur: vj });
+  // Feedback visuel
+  input.style.borderColor = '#22c55e';
+  setTimeout(function() { input.style.borderColor = '#e5e7eb'; }, 800);
+};
+
+// Sauvegarde immédiate d'un rang au blur
+window.wzSaveOneOrdre = function(input) {
+  var pid = input.dataset.pid;
+  var val = input.value.trim();
+  var rang = val ? parseInt(val) : 999;
+  var rayon = RAYONS.find(function(r) { return r.id === wizardRayon; });
+  if (!rayon) return;
+  var prod = rayon.produits.find(function(p) { return p.id === pid; });
+  if (prod) prod.rangStock = rang;
+  setDoc(doc(db, 'magasins', magasinId, 'config_commande', wizardRayon, 'ordre_stock', pid), { rang: rang });
+  input.style.borderColor = '#22c55e';
+  setTimeout(function() { input.style.borderColor = 'var(--be)'; }, 800);
+};
+
+window.wzSaveAllVj = async function() {
+  // D'abord capturer les inputs du rayon actuellement affiché
+  wzCaptureVjInputs();
+  setSyncDot('syncing');
+  // Sauvegarder les VJ de TOUS les rayons (depuis la mémoire)
+  for (var ri = 0; ri < RAYONS.length; ri++) {
+    var rayon = RAYONS[ri];
+    var batch = writeBatch(db);
+    var count = 0;
+    for (var pi = 0; pi < rayon.produits.length; pi++) {
+      var p = rayon.produits[pi];
+      if (p.actif === false) continue;
+      if (p.vj !== null && p.vj !== undefined && p.vj > 0) {
+        batch.set(doc(db, 'magasins', magasinId, 'config_commande', rayon.id, 'ventes_jour', p.id), { valeur: p.vj });
+        count++;
+      }
+    }
+    if (!wizardConfig[rayon.id]) wizardConfig[rayon.id] = {};
+    wizardConfig[rayon.id].vj_done = true;
+    batch.set(doc(db, 'magasins', magasinId, 'config_commande', rayon.id), { vj_done: true }, { merge: true });
+    await batch.commit();
+  }
+  setSyncDot('ok');
+  closeWizardStep();
+};
+
+// -- STEP 4: LISTE STOCK (ORDRE) --
+var wzOrdreMode = 'drag'; // 'drag' ou 'rang'
+
+function renderWzOrdre(container) {
+  var html = '<div style="display:flex;gap:6px;margin-bottom:14px">';
+  for (var ri = 0; ri < RAYONS.length; ri++) {
+    var r = RAYONS[ri];
+    html += '<button onclick="wzSetOrdreRayon(\'' + r.id + '\')" style="flex:1;padding:10px;border-radius:12px;border:2px solid #' + r.color + ';background:' + (wizardRayon === r.id ? '#' + r.color : '#fff') + ';color:' + (wizardRayon === r.id ? '#fff' : '#' + r.color) + ';font-weight:800;font-size:.82rem">' + r.icon + ' ' + r.nom + '</button>';
+  }
+  html += '</div>';
+
+  var rayon = RAYONS.find(function(r) { return r.id === wizardRayon; });
+  if (!rayon) { container.innerHTML = html; return; }
+
+  var prods = rayon.produits.filter(function(p) { return p.actif !== false; });
+
+  // Toggle drag / rang
+  html += '<div style="display:flex;gap:8px;margin-bottom:10px">' +
+    '<button onclick="wzOrdreMode=\'drag\';renderWzOrdre(document.getElementById(\'wizard-page-content\'))" style="flex:1;padding:8px;border-radius:10px;font-size:.78rem;font-weight:800;background:' + (wzOrdreMode === 'drag' ? '#7b1fa2' : 'var(--be)') + ';color:' + (wzOrdreMode === 'drag' ? '#fff' : 'var(--brown)') + '">&#9776; Drag & Drop</button>' +
+    '<button onclick="wzOrdreMode=\'rang\';renderWzOrdre(document.getElementById(\'wizard-page-content\'))" style="flex:1;padding:8px;border-radius:10px;font-size:.78rem;font-weight:800;background:' + (wzOrdreMode === 'rang' ? '#7b1fa2' : 'var(--be)') + ';color:' + (wzOrdreMode === 'rang' ? '#fff' : 'var(--brown)') + '">123 Numero de rang</button>' +
+  '</div>';
+
+  html += '<div style="font-size:.78rem;color:var(--gr);font-weight:700;margin-bottom:8px">' +
+    (wzOrdreMode === 'drag' ? 'Maintenez le bouton &#9776; et glissez pour reorganiser' : 'Saisissez le numero de rang pour chaque produit') + '</div>';
+
+  html += '<div style="display:flex;gap:8px;margin-bottom:10px">' +
+    '<button onclick="wzDownloadCSV()" style="flex:1;padding:10px;border-radius:12px;border:2px solid #7b1fa2;background:#fff;color:#7b1fa2;font-weight:800;font-size:.78rem;font-family:var(--font);cursor:pointer">&#128229; T&eacute;l&eacute;charger les listes vierges</button>' +
+    '<label style="flex:1;padding:10px;border-radius:12px;background:#7b1fa2;color:#fff;font-weight:800;font-size:.78rem;text-align:center;cursor:pointer;border:none;border-radius:12px">&#128228; Importer mes rangs<input type="file" accept=".csv,.txt" onchange="wzImportCSV(this)" style="display:none"></label>' +
+  '</div>';
+  html += '<div class="card" style="padding:0;overflow:hidden" id="wz-ordre-list">';
+
+  for (var pi = 0; pi < prods.length; pi++) {
+    var p = prods[pi];
+    if (wzOrdreMode === 'drag') {
+      html += '<div class="param-prod-row" data-pid="' + p.id + '" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--be)">' +
+        '<button class="param-drag-handle" style="width:40px;height:40px;border-radius:10px;flex-shrink:0">&#9776;</button>' +
+        '<div style="min-width:28px;width:28px;height:28px;border-radius:8px;background:linear-gradient(145deg,#ab47bc,#7b1fa2);color:#fff;font-weight:900;font-size:.75rem;display:flex;align-items:center;justify-content:center;flex-shrink:0">' + (pi + 1) + '</div>' +
+        '<div style="flex:1;min-width:0"><div style="font-weight:800;font-size:.85rem;color:var(--brown);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + p.nom + '</div>' +
+        '<div style="font-size:.65rem;color:var(--gr)">' + (p.conditionnement || '') + '</div></div>' +
+      '</div>';
+    } else {
+      html += '<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--be)">' +
+        '<input type="number" min="1" inputmode="numeric" data-pid="' + p.id + '" class="wz-rang-input" value="' + (p.rangStock !== 999 ? p.rangStock : '') + '" style="width:50px;height:40px;border:3px solid var(--be);border-radius:10px;font-size:1rem;font-weight:900;text-align:center;color:var(--brown);background:var(--wh);font-family:var(--font)" placeholder="?" onblur="wzSaveOneOrdre(this)">' +
+        '<div style="flex:1;min-width:0"><div style="font-weight:800;font-size:.85rem;color:var(--brown)">' + p.nom + '</div>' +
+        '<div style="font-size:.65rem;color:var(--gr)">' + (p.conditionnement || '') + ' \u00b7 Fourn: ' + p.rangFournisseur + '</div></div>' +
+      '</div>';
+    }
+  }
+
+  html += '</div>';
+  html += '<button onclick="wzSaveOrdre()" class="btn-p" style="margin-top:14px">&#10003; Valider l\'ordre stock</button>';
+  container.innerHTML = html;
+
+  // Init drag & drop si mode drag
+  if (wzOrdreMode === 'drag') {
+    setTimeout(function() { initWzDragDrop(); }, 50);
+  }
+}
+
+// --- CSV export/import pour ordre stock ---
+window.wzDownloadCSV = wzDownloadCSV;
+window.wzImportCSV = wzImportCSV;
+function wzDownloadCSV() {
+  var rayon = RAYONS.find(function(r) { return r.id === wizardRayon; });
+  if (!rayon) return;
+  var prods = rayon.produits.filter(function(p) { return p.actif !== false; }).slice();
+  prods.sort(function(a, b) { return (a.rangFournisseur || 999) - (b.rangFournisseur || 999); });
+  var sep = ';';
+  var lines = ['Rang fournisseur' + sep + 'Code' + sep + 'Nom' + sep + 'Conditionnement' + sep + 'Nouveau rang'];
+  for (var i = 0; i < prods.length; i++) {
+    var p = prods[i];
+    var nom = (p.nom || '').replace(/;/g, ',');
+    var cond = (p.conditionnement || '').replace(/;/g, ',');
+    lines.push((p.rangFournisseur || i + 1) + sep + (p.code || p.id) + sep + nom + sep + cond + sep);
+  }
+  var csv = '\uFEFF' + lines.join('\n');
+  var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'ordre_stock_' + rayon.id + '.csv';
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function() { document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
+}
+
+function wzImportCSV(input) {
+  if (!input.files || !input.files[0]) return;
+  var rayon = RAYONS.find(function(r) { return r.id === wizardRayon; });
+  if (!rayon) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var text = e.target.result;
+    var lines = text.split(/\r?\n/);
+    // Detecter separateur
+    var sep = (lines[0] || '').indexOf('\t') !== -1 ? '\t' : ';';
+    // Skip header
+    var rangMap = {};
+    var count = 0;
+    for (var i = 1; i < lines.length; i++) {
+      var cols = lines[i].split(sep);
+      if (cols.length < 5) continue;
+      var code = (cols[1] || '').trim();
+      var newRang = parseInt(cols[4], 10);
+      if (!code || isNaN(newRang)) continue;
+      rangMap[code] = newRang;
+      count++;
+    }
+    if (count === 0) { alert('Aucun rang trouvé dans le fichier. Vérifiez que la colonne 5 (Nouveau rang) est remplie.'); return; }
+    // Appliquer les rangs
+    var applied = 0;
+    var prods = rayon.produits.filter(function(p) { return p.actif !== false; });
+    for (var j = 0; j < prods.length; j++) {
+      var p = prods[j];
+      var key = p.code || p.id;
+      if (rangMap[key] !== undefined) {
+        p.rangStock = rangMap[key];
+        applied++;
+      }
+    }
+    // Trier par nouveau rang
+    rayon.produits.sort(function(a, b) { return (a.rangStock || 9999) - (b.rangStock || 9999); });
+    // Sauvegarder en Firestore
+    wzSaveOrdre();
+    renderWzOrdre(document.getElementById('wizard-page-content'));
+    alert(applied + ' / ' + count + ' rangs appliqués avec succès !');
+  };
+  reader.readAsText(input.files[0]);
+  input.value = '';
+}
+
+// Drag & drop pour ordre stock wizard (copie exacte du modele inventaire.html)
+function initWzDragDrop() {
+  var container = document.getElementById('wz-ordre-list');
+  if (!container) return;
+
+  var dragEl = null, dragIdx = null, startY = 0, origTop = 0, lastTargetIdx = -1, dragH = 0;
+  var rows = [], rowMids = [];
+  var pendingRow = null, pendingStartY = 0, dragStarted = false;
+  var scrollInterval = null;
+  var SCROLL_ZONE = 80;
+  var SCROLL_SPEED = 8;
+
+  function getActiveRows() {
+    return Array.from(container.querySelectorAll('.param-prod-row'));
+  }
+
+  var offsetY = 0; // offset entre le doigt et le haut de la ligne
+
+  function startDrag(row, sy) {
+    dragStarted = true;
+    dragEl = row;
+    rows = getActiveRows();
+    dragIdx = rows.indexOf(row);
+    if (dragIdx === -1) return;
+    lastTargetIdx = -1;
+    startY = sy;
+
+    var rects = rows.map(function(r) { return r.getBoundingClientRect(); });
+    rowMids = rects.map(function(r) { return (r.top + r.bottom) / 2; });
+    dragH = rects[dragIdx].height;
+    origTop = rects[dragIdx].top;
+    offsetY = sy - origTop; // distance entre le doigt et le haut de la ligne
+
+    dragEl.classList.add('dragging');
+    dragEl.style.top = origTop + 'px';
+    dragEl.style.left = rects[dragIdx].left + 'px';
+    dragEl.style.width = rects[dragIdx].width + 'px';
+
+    // Placeholder invisible pour garder l'espace de la ligne draggee
+    var spacer = document.createElement('div');
+    spacer.id = 'wz-drag-spacer';
+    spacer.style.cssText = 'height:' + dragH + 'px;background:transparent';
+    dragEl.parentNode.insertBefore(spacer, dragEl);
+  }
+
+  container.addEventListener('touchstart', function(e) {
+    var handle = e.target.closest('.param-drag-handle');
+    if (!handle) return;
+    var row = handle.closest('.param-prod-row');
+    if (!row) return;
+    e.preventDefault();
+    pendingRow = row;
+    pendingStartY = e.touches[0].clientY;
+    dragStarted = false;
+  }, {passive: false});
+
+  container.addEventListener('touchmove', function(e) {
+    if (!dragStarted && pendingRow) {
+      var cy2 = e.touches[0].clientY;
+      if (Math.abs(cy2 - pendingStartY) > 15) {
+        startDrag(pendingRow, pendingStartY);
+        pendingRow = null;
+      } else return;
+    }
+    if (!dragEl) return;
+    e.preventDefault();
+    var cy = e.touches[0].clientY;
+
+    dragEl.style.top = (cy - offsetY) + 'px';
+
+    // Auto-scroll fluide proportionnel
+    if (scrollInterval) { clearInterval(scrollInterval); scrollInterval = null; }
+    var vh = window.innerHeight;
+    if (cy < SCROLL_ZONE) {
+      var speedUp = Math.round(SCROLL_SPEED * (1 - cy / SCROLL_ZONE));
+      scrollInterval = setInterval(function() { window.scrollBy(0, -Math.max(speedUp, 2)); }, 16);
+    } else if (cy > vh - SCROLL_ZONE) {
+      var speedDown = Math.round(SCROLL_SPEED * (1 - (vh - cy) / SCROLL_ZONE));
+      scrollInterval = setInterval(function() { window.scrollBy(0, Math.max(speedDown, 2)); }, 16);
+    }
+
+    // Detection interligne avec zones 25/50/25 (grande zone morte)
+    var visibleRows = rows.filter(function(r) { return r !== dragEl && r.id !== 'wz-drag-spacer'; });
+    var insertIdx = -1;
+
+    for (var i = 0; i < visibleRows.length; i++) {
+      var rect = visibleRows[i].getBoundingClientRect();
+      var h = rect.height;
+      if (cy < rect.top + h * 0.25) { insertIdx = i; break; }
+      if (cy > rect.bottom - h * 0.25) { insertIdx = i + 1; }
+    }
+
+    // Fine ligne violette a l'interligne (pas d'ecartement)
+    visibleRows.forEach(function(r) { r.style.borderTop = ''; r.style.borderBottom = ''; });
+    if (insertIdx !== -1) {
+      if (insertIdx < visibleRows.length) {
+        visibleRows[insertIdx].style.borderTop = '3px solid #7b1fa2';
+      } else if (visibleRows.length > 0) {
+        visibleRows[visibleRows.length - 1].style.borderBottom = '3px solid #7b1fa2';
+      }
+    }
+
+    // Convertir en index rows[] original
+    var realIdx = insertIdx;
+    if (insertIdx !== -1 && insertIdx < visibleRows.length) {
+      realIdx = rows.indexOf(visibleRows[insertIdx]);
+    } else if (insertIdx >= visibleRows.length) {
+      realIdx = rows.length;
+    }
+    if (realIdx > dragIdx) realIdx--;
+    lastTargetIdx = (insertIdx === -1) ? -1 : realIdx;
+  }, {passive: false});
+
+  container.addEventListener('touchend', function() {
+    if (scrollInterval) { clearInterval(scrollInterval); scrollInterval = null; }
+    pendingRow = null;
+    if (!dragStarted || !dragEl) { dragStarted = false; return; }
+    var targetIdx = lastTargetIdx;
+    var _dragEl = dragEl, _dragIdx = dragIdx;
+
+    if (targetIdx !== -1 && targetIdx !== _dragIdx) {
+      rows[targetIdx].style.transition = 'background .3s';
+      rows[targetIdx].style.background = '#d1fae5';
+    }
+
+    setTimeout(function() {
+      _dragEl.classList.remove('dragging');
+      _dragEl.style.top = '';
+      _dragEl.style.left = '';
+      _dragEl.style.width = '';
+      rows.forEach(function(r) { r.style.background = ''; r.style.transition = ''; r.style.borderTop = ''; r.style.borderBottom = ''; });
+      var spacer = document.getElementById('wz-drag-spacer');
+      if (spacer) spacer.remove();
+
+      if (targetIdx !== -1 && targetIdx !== _dragIdx) {
+        // Collecter les pids dans l'ordre actuel
+        var activeRows = getActiveRows();
+        var pids = [];
+        for (var k = 0; k < activeRows.length; k++) {
+          var pid = activeRows[k].getAttribute('data-pid');
+          if (pid) pids.push(pid);
+        }
+        // Appliquer le deplacement
+        var moved = pids.splice(_dragIdx, 1)[0];
+        pids.splice(targetIdx, 0, moved);
+
+        // Mettre a jour les rangs dans Firestore + memoire
+        var rayon = RAYONS.find(function(r) { return r.id === wizardRayon; });
+        var batch = writeBatch(db);
+        for (var u = 0; u < pids.length; u++) {
+          batch.set(doc(db, 'magasins', magasinId, 'config_commande', wizardRayon, 'ordre_stock', pids[u]), { rang: u + 1 });
+          if (rayon) {
+            var prod = rayon.produits.find(function(p) { return p.id === pids[u]; });
+            if (prod) prod.rangStock = u + 1;
+          }
+        }
+        batch.commit();
+
+        // Retrier les produits en memoire puis re-render
+        if (rayon) rayon.produits.sort(function(a, b) { return (a.rangStock || 999) - (b.rangStock || 999); });
+        renderWzOrdre(document.getElementById('wizard-page-content'));
+      }
+
+      dragEl = null; dragIdx = null; lastTargetIdx = -1; dragStarted = false;
+    }, 400);
+  });
+
+  // Mouse support (desktop)
+  container.addEventListener('mousedown', function(e) {
+    var handle = e.target.closest('.param-drag-handle');
+    if (!handle) return;
+    var row = handle.closest('.param-prod-row');
+    if (!row) return;
+    e.preventDefault();
+    startDrag(row, e.clientY);
+    var mouseScrollInterval = null;
+    var onMove = function(e2) {
+      if (!dragEl) return;
+      var cy = e2.clientY;
+      dragEl.style.top = (cy - offsetY) + 'px';
+
+      // Auto-scroll desktop
+      if (mouseScrollInterval) { clearInterval(mouseScrollInterval); mouseScrollInterval = null; }
+      var vh = window.innerHeight;
+      if (cy < SCROLL_ZONE) {
+        var spUp = Math.round(SCROLL_SPEED * (1 - cy / SCROLL_ZONE));
+        mouseScrollInterval = setInterval(function() { window.scrollBy(0, -Math.max(spUp, 2)); }, 16);
+      } else if (cy > vh - SCROLL_ZONE) {
+        var spDown = Math.round(SCROLL_SPEED * (1 - (vh - cy) / SCROLL_ZONE));
+        mouseScrollInterval = setInterval(function() { window.scrollBy(0, Math.max(spDown, 2)); }, 16);
+      }
+
+      // Interligne detection
+      var visibleRows = rows.filter(function(r) { return r !== dragEl && r.id !== 'wz-drag-spacer'; });
+      var insIdx = -1;
+      for (var i = 0; i < visibleRows.length; i++) {
+        var rect = visibleRows[i].getBoundingClientRect();
+        var h = rect.height;
+        if (cy < rect.top + h * 0.25) { insIdx = i; break; }
+        if (cy > rect.bottom - h * 0.25) { insIdx = i + 1; }
+      }
+      visibleRows.forEach(function(r) { r.style.borderTop = ''; r.style.borderBottom = ''; });
+      if (insIdx !== -1) {
+        if (insIdx < visibleRows.length) {
+          visibleRows[insIdx].style.borderTop = '3px solid #7b1fa2';
+        } else if (visibleRows.length > 0) {
+          visibleRows[visibleRows.length - 1].style.borderBottom = '3px solid #7b1fa2';
+        }
+      }
+      var realIdx = (insIdx !== -1 && insIdx < visibleRows.length) ? rows.indexOf(visibleRows[insIdx]) : rows.length;
+      if (realIdx > dragIdx) realIdx--;
+      lastTargetIdx = (insIdx === -1) ? -1 : realIdx;
+    };
+    var onUp = function() {
+      if (mouseScrollInterval) { clearInterval(mouseScrollInterval); mouseScrollInterval = null; }
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      // Simulate touchend logic
+      var evt = new Event('touchend');
+      container.dispatchEvent(evt);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+}
+
+// Sauvegarder les rangs en mémoire avant de changer de rayon
+function wzCaptureOrdreInputs() {
+  var rayon = RAYONS.find(function(r) { return r.id === wizardRayon; });
+  if (!rayon) return;
+  var inputs = document.querySelectorAll('.wz-rang-input');
+  inputs.forEach(function(inp) {
+    var val = inp.value.trim();
+    var pid = inp.dataset.pid;
+    var rang = val ? parseInt(val) : 999;
+    var prod = rayon.produits.find(function(p) { return p.id === pid; });
+    if (prod) prod.rangStock = rang;
+  });
+}
+
+window.wzSetOrdreRayon = function(id) {
+  wzCaptureOrdreInputs();
+  wizardRayon = id;
+  renderWzOrdre(document.getElementById('wizard-page-content'));
+};
+
+window.wzSaveOrdre = async function() {
+  // D'abord capturer les inputs du rayon actuellement affiché
+  wzCaptureOrdreInputs();
+  setSyncDot('syncing');
+  // Sauvegarder l'ordre de TOUS les rayons (depuis la mémoire)
+  for (var ri = 0; ri < RAYONS.length; ri++) {
+    var rayon = RAYONS[ri];
+    var batch = writeBatch(db);
+    for (var pi = 0; pi < rayon.produits.length; pi++) {
+      var p = rayon.produits[pi];
+      if (p.actif === false) continue;
+      batch.set(doc(db, 'magasins', magasinId, 'config_commande', rayon.id, 'ordre_stock', p.id), { rang: p.rangStock || 999 });
+    }
+    if (!wizardConfig[rayon.id]) wizardConfig[rayon.id] = {};
+    wizardConfig[rayon.id].ordre_done = true;
+    batch.set(doc(db, 'magasins', magasinId, 'config_commande', rayon.id), { ordre_done: true }, { merge: true });
+    await batch.commit();
+    // Re-trier
+    rayon.produits.sort(function(a, b) { return (a.rangStock || 999) - (b.rangStock || 999); });
+  }
+  setSyncDot('ok');
+  closeWizardStep();
+};
+
+</script>
+</body>
+</html>
