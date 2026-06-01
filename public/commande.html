@@ -496,16 +496,18 @@ onAuthStateChanged(auth, async function(user) {
 // ============================================
 function buildProduits(prods, vjMap, ordreMap, inactifMap) {
   return prods.map(function(p) {
+    var cfg = vjMap[p.id] || {};
     return {
       id: p.id, nom: p.nom || '',
       cond: p.conditionnement_nombre || p.cond || null,
       conditionnement: p.conditionnement || '',
-      vj: vjMap[p.id] !== undefined ? vjMap[p.id] : (p.ventes_jour_defaut || null),
+      vj: cfg.vj !== undefined ? cfg.vj : (p.ventes_jour_defaut || null),
+      vjColis: cfg.vjColis || 0,
       ref: p.ref_fournisseur || '',
       rangStock: ordreMap[p.id] !== undefined ? ordreMap[p.id] : (p.ordre_fournisseur || 999),
       rangFournisseur: p.ordre_fournisseur || 999,
       actif: inactifMap[p.id] !== undefined ? inactifMap[p.id] : true,
-      stockMini: p.stock_mini || 0, categorie: p.categorie || ''
+      stockMini: cfg.stockMini || p.stock_mini || 0, categorie: p.categorie || ''
     };
   }).sort(function(a, b) { return a.rangStock - b.rangStock; });
 }
@@ -534,7 +536,10 @@ async function loadOneRayon(rayon) {
 
     var prods = results[0].docs.map(function(d) { return { id: d.id, ...d.data() }; }).filter(function(p) { return p.actif !== false; });
     var vjMap = {}, ordreMap = {}, inactifMap = {};
-    results[1].docs.forEach(function(d) { vjMap[d.id] = d.data().valeur; });
+    results[1].docs.forEach(function(d) {
+      var data = d.data();
+      vjMap[d.id] = { vj: data.vj !== undefined ? data.vj : data.valeur, vjColis: data.vjColis || 0, stockMini: data.stockMini || 0 };
+    });
     results[2].docs.forEach(function(d) { ordreMap[d.id] = d.data().rang; });
     results[3].docs.forEach(function(d) { inactifMap[d.id] = d.data().actif; });
 
@@ -938,13 +943,30 @@ async function sauvegarderInventaire() {
     var vjBase = p.vj || 0;
     var vj = getAjustedVj(vjBase, activeRayonId, p.categorie || '');
     var cond = p.cond || 1;
-    var besoin = (rayon.unite === 'cartons' && cond > 1) ? Math.ceil(vj * jours / cond) : Math.ceil(vj * jours);
-    var a_commander = Math.max(0, besoin - stock);
+    var besoin = 0;
+    var a_commander = 0;
+    var stockMini = p.stockMini || 0;
+    var vjColis = p.vjColis || 0;
+
+    if (stockMini > 0 && !vj && !vjColis) {
+      // Mode stock mini : pas de VJ, juste seuil
+      besoin = stockMini;
+      a_commander = Math.max(0, stockMini - stock);
+    } else if (vjColis > 0) {
+      // Mode VJ par colis : VJ directement en cartons
+      besoin = Math.ceil(vjColis * jours);
+      a_commander = Math.max(0, besoin - stock);
+    } else if (vj > 0) {
+      // Mode VJ par produit : calcul classique
+      besoin = (rayon.unite === 'cartons' && cond > 1) ? Math.ceil(vj * jours / cond) : Math.ceil(vj * jours);
+      a_commander = Math.max(0, besoin - stock);
+    }
+
     return {
       produitId: p.id, nom: p.nom, ref_fournisseur: p.ref || '',
       conditionnement: p.conditionnement || '', cond: p.cond || null,
-      ventes_jour: vj, stock: stock, besoin: besoin, a_commander: a_commander,
-      ordre_fournisseur: p.rangFournisseur || 999, stockMini: p.stockMini || 0
+      ventes_jour: vj, vjColis: vjColis, stock: stock, besoin: besoin, a_commander: a_commander,
+      ordre_fournisseur: p.rangFournisseur || 999, stockMini: stockMini
     };
   });
 
@@ -1390,9 +1412,11 @@ function renderParamTabInternal() {
     if (p.actif === false) continue;
     activeCount++;
     var bubbleRang = paramSort === 'stock' ? p.rangStock : p.rangFournisseur;
-    var subInfo = (p.cond ? '<span style="color:#e67e22;font-weight:800">cond ' + p.cond + '</span>  ' : '') +
-      (p.vj ? '<span style="color:#7c3aed;font-weight:800">vj ' + p.vj + '</span>  ' : '') +
-      (p.stockMini > 0 ? '<span style="color:#f59e0b;font-weight:800">mini ' + p.stockMini + '</span>' : '');
+    var modeInfo = '';
+    if (p.vj) modeInfo = '<span style="color:#7c3aed;font-weight:800">vj/prod ' + p.vj + '</span>';
+    else if (p.vjColis) modeInfo = '<span style="color:#1565c0;font-weight:800">vj/colis ' + p.vjColis + '</span>';
+    else if (p.stockMini > 0) modeInfo = '<span style="color:#e67e22;font-weight:800">mini ' + p.stockMini + '</span>';
+    var subInfo = (p.cond ? '<span style="color:#999;font-weight:700">x' + p.cond + '</span>  ' : '') + modeInfo;
 
     prodRows += '<div class="param-prod-row" data-id="' + p.id + '">' +
       '<div style="display:flex;align-items:center;gap:6px">' +
@@ -1436,14 +1460,17 @@ window.editProd = function(prodId, rayonId) {
     '<div style="display:flex;flex-direction:column;gap:10px">' +
       '<div><label style="font-size:.78rem;font-weight:700;color:var(--gr)">Nom</label>' +
         '<input id="ep-nom" value="' + (prod.nom || '').replace(/"/g, '&quot;') + '" style="width:100%;padding:10px;border:2px solid var(--be);border-radius:8px;background:var(--goldbg);color:var(--brown);font-size:.9rem;font-weight:700"/></div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
-        '<div><label style="font-size:.78rem;font-weight:700;color:var(--gr)">Conditionnement</label>' +
-          '<input id="ep-cond" type="number" value="' + (prod.cond || '') + '" style="width:100%;padding:10px;border:2px solid var(--be);border-radius:8px;background:var(--goldbg);color:var(--brown);font-size:.9rem" placeholder="ex: 24"/></div>' +
-        '<div><label style="font-size:.78rem;font-weight:700;color:var(--gr)">Ventes/jour</label>' +
-          '<input id="ep-vj" type="number" step="0.1" value="' + (prod.vj || '') + '" style="width:100%;padding:10px;border:2px solid var(--be);border-radius:8px;background:var(--goldbg);color:var(--brown);font-size:.9rem" placeholder="ex: 5.2"/></div>' +
+      '<div style="font-size:.75rem;font-weight:700;color:var(--gr);margin:4px 0 8px;text-align:center">Remplissez UN seul mode de calcul</div>' +
+      '<div><label style="font-size:.78rem;font-weight:700;color:var(--gr)">Conditionnement (unites/colis)</label>' +
+        '<input id="ep-cond" type="number" value="' + (prod.cond || '') + '" style="width:100%;padding:10px;border:2px solid var(--be);border-radius:8px;background:var(--goldbg);color:var(--brown);font-size:.9rem" placeholder="ex: 24"/></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">' +
+        '<div><label style="font-size:.78rem;font-weight:700;color:#7c3aed">VJ/produit</label>' +
+          '<input id="ep-vj" type="number" step="0.1" value="' + (prod.vj || '') + '" style="width:100%;padding:10px;border:2px solid #7c3aed;border-radius:8px;background:#faf5ff;color:#7c3aed;font-size:.9rem;font-weight:800" placeholder="5.2"/></div>' +
+        '<div><label style="font-size:.78rem;font-weight:700;color:#1565c0">VJ/colis</label>' +
+          '<input id="ep-vjcolis" type="number" step="0.1" value="' + (prod.vjColis || '') + '" style="width:100%;padding:10px;border:2px solid #1565c0;border-radius:8px;background:#e3f2fd;color:#1565c0;font-size:.9rem;font-weight:800" placeholder="2"/></div>' +
+        '<div><label style="font-size:.78rem;font-weight:700;color:#e67e22">Stock mini</label>' +
+          '<input id="ep-mini" type="number" min="0" value="' + (prod.stockMini || '') + '" style="width:100%;padding:10px;border:2px solid #e67e22;border-radius:8px;background:#fef9f3;color:#e67e22;font-size:.9rem;font-weight:800" placeholder="1"/></div>' +
       '</div>' +
-      '<div><label style="font-size:.78rem;font-weight:700;color:#e67e22">Stock mini</label>' +
-        '<input id="ep-mini" type="number" min="0" value="' + (prod.stockMini || '') + '" style="width:100%;padding:10px;border:2px solid #e67e22;border-radius:8px;background:#fef9f3;color:#e67e22;font-size:.9rem;font-weight:800" placeholder="ex: 1"/></div>' +
       '<div style="display:flex;gap:8px;margin-top:6px">' +
         '<button onclick="closeModal()" style="flex:1;background:var(--be);color:var(--brown);font-weight:800;padding:14px;border-radius:var(--r)">Annuler</button>' +
         '<button onclick="saveEditProd(\'' + prodId + '\',\'' + rayonId + '\')" style="flex:1;background:linear-gradient(145deg,#ab47bc,#7b1fa2);color:#fff;font-weight:800;padding:14px;border-radius:var(--r);box-shadow:0 4px 0 #6a1b9a">Enregistrer</button>' +
@@ -1459,19 +1486,25 @@ window.saveEditProd = async function(prodId, rayonId) {
   if (!prod) return;
 
   var vjEl = document.getElementById('ep-vj');
+  var vjColisEl = document.getElementById('ep-vjcolis');
   var condEl = document.getElementById('ep-cond');
   var miniEl = document.getElementById('ep-mini');
   var vj = vjEl && vjEl.value ? parseFloat(vjEl.value) : null;
+  var vjColis = vjColisEl && vjColisEl.value ? parseFloat(vjColisEl.value) : null;
   var cond = condEl && condEl.value ? parseInt(condEl.value) : null;
   var mini = miniEl && miniEl.value !== '' ? parseInt(miniEl.value) : null;
 
-  // Sauvegarder VJ dans config perso du magasin
-  if (vj !== null) {
-    prod.vj = vj;
-    await setDoc(doc(db, 'magasins', magasinId, 'config_commande', rayonId, 'ventes_jour', prodId), { valeur: vj });
-  }
+  // Sauvegarder dans config perso du magasin
+  var updates = {};
+  prod.vj = vj || 0;
+  prod.vjColis = vjColis || 0;
+  prod.stockMini = mini || 0;
   if (cond !== null) prod.cond = cond;
-  if (mini !== null) prod.stockMini = mini;
+
+  updates.vj = prod.vj;
+  updates.vjColis = prod.vjColis;
+  updates.stockMini = prod.stockMini;
+  await setDoc(doc(db, 'magasins', magasinId, 'config_commande', rayonId, 'ventes_jour', prodId), updates);
 
   closeModal();
   if (activeRayonId) renderSaisie(activeRayonId);
@@ -1506,25 +1539,24 @@ function renderVjInternal() {
 
   var produits = rayon.produits.filter(function(p) { return p.actif !== false; });
 
-  html += '<div style="display:grid;grid-template-columns:1.4fr .7fr .7fr .5fr;gap:4px;padding:6px 10px;background:#1e293b;border-radius:10px 10px 0 0">' +
-    '<div style="color:#fff;font-weight:800;font-size:.7rem">Produit</div>' +
-    '<div style="color:#fff;font-weight:800;font-size:.7rem;text-align:center">Unites/j</div>' +
-    '<div style="color:#fff;font-weight:800;font-size:.7rem;text-align:center">Colis/j</div>' +
-    '<div style="color:#fff;font-weight:800;font-size:.7rem;text-align:center">Actuel</div>' +
+  html += '<div style="display:grid;grid-template-columns:1.2fr .6fr .6fr .6fr;gap:4px;padding:6px 10px;background:#1e293b;border-radius:10px 10px 0 0">' +
+    '<div style="color:#fff;font-weight:800;font-size:.65rem">Produit</div>' +
+    '<div style="color:#94a3ff;font-weight:800;font-size:.65rem;text-align:center">VJ/prod</div>' +
+    '<div style="color:#c4b5fd;font-weight:800;font-size:.65rem;text-align:center">VJ/colis</div>' +
+    '<div style="color:#fdba74;font-weight:800;font-size:.65rem;text-align:center">Stk mini</div>' +
   '</div>';
 
   for (var pi = 0; pi < produits.length; pi++) {
     var p = produits[pi];
-    var currentVj = p.vj || 0;
     var cond = p.cond || 1;
     var bg = pi % 2 === 0 ? '#fff' : '#faf7f0';
     var hasCond = cond > 1;
 
-    html += '<div style="display:grid;grid-template-columns:1.4fr .7fr .7fr .5fr;gap:4px;align-items:center;padding:8px 10px;background:' + bg + ';border-bottom:1px solid #f0e8d8">' +
-      '<div><div style="font-weight:800;font-size:.78rem;color:var(--brown)">' + p.nom + '</div>' + (hasCond ? '<div style="font-size:.6rem;color:var(--gr)">x' + cond + '</div>' : '') + '</div>' +
-      '<div style="text-align:center"><input type="number" step="0.1" inputmode="decimal" data-pid="' + p.id + '" data-cond="' + cond + '" class="vj-unit-input" style="width:55px;padding:6px 3px;border:2px solid #e5e7eb;border-radius:8px;text-align:center;font-weight:800;font-size:.82rem;font-family:var(--font);color:#1e40af;background:#f0f9ff" onfocus="this.select()"></div>' +
-      '<div style="text-align:center">' + (hasCond ? '<input type="number" step="0.01" inputmode="decimal" data-pid="' + p.id + '" data-cond="' + cond + '" class="vj-carton-input" style="width:55px;padding:6px 3px;border:2px solid #e5e7eb;border-radius:8px;text-align:center;font-weight:800;font-size:.82rem;font-family:var(--font);color:#7b1fa2;background:#faf5ff" onfocus="this.select()">' : '<span style="font-size:.7rem;color:#ccc">\u2014</span>') + '</div>' +
-      '<div style="text-align:center;font-size:.75rem;font-weight:700;color:var(--gr)">' + (currentVj || '\u2014') + '</div>' +
+    html += '<div style="display:grid;grid-template-columns:1.2fr .6fr .6fr .6fr;gap:4px;align-items:center;padding:8px 10px;background:' + bg + ';border-bottom:1px solid #f0e8d8">' +
+      '<div><div style="font-weight:800;font-size:.75rem;color:var(--brown)">' + p.nom + '</div>' + (hasCond ? '<div style="font-size:.55rem;color:var(--gr)">x' + cond + '</div>' : '') + '</div>' +
+      '<div style="text-align:center"><input type="number" step="0.1" inputmode="decimal" data-pid="' + p.id + '" data-cond="' + cond + '" class="vj-unit-input" value="' + (p.vj || '') + '" style="width:50px;padding:5px 2px;border:2px solid #e5e7eb;border-radius:8px;text-align:center;font-weight:800;font-size:.8rem;font-family:var(--font);color:#1e40af;background:#f0f9ff" onfocus="this.select()"></div>' +
+      '<div style="text-align:center"><input type="number" step="0.1" inputmode="decimal" data-pid="' + p.id + '" data-cond="' + cond + '" class="vj-carton-input" value="' + (p.vjColis || '') + '" style="width:50px;padding:5px 2px;border:2px solid #e5e7eb;border-radius:8px;text-align:center;font-weight:800;font-size:.8rem;font-family:var(--font);color:#7b1fa2;background:#faf5ff" onfocus="this.select()"></div>' +
+      '<div style="text-align:center"><input type="number" step="1" min="0" inputmode="numeric" data-pid="' + p.id + '" class="vj-mini-input" value="' + (p.stockMini || '') + '" style="width:50px;padding:5px 2px;border:2px solid #e5e7eb;border-radius:8px;text-align:center;font-weight:800;font-size:.8rem;font-family:var(--font);color:#e67e22;background:#fef9f3" onfocus="this.select()"></div>' +
     '</div>';
   }
 
@@ -1541,26 +1573,33 @@ window.vjSaveAll = async function() {
   if (!_vjRayon) return;
   var rayon = RAYONS.find(function(r) { return r.id === _vjRayon; });
   if (!rayon) return;
-  var inputs = document.querySelectorAll('.vj-unit-input');
+  var unitInputs = document.querySelectorAll('.vj-unit-input');
   setSyncDot('syncing');
   var batch = writeBatch(db);
   var count = 0;
-  inputs.forEach(function(inp) {
-    var val = inp.value.trim();
-    if (val === '') return;
-    var pid = inp.dataset.pid;
-    var vj = parseFloat(val);
-    if (isNaN(vj)) return;
+  var pids = new Set();
+  unitInputs.forEach(function(inp) { pids.add(inp.dataset.pid); });
+  document.querySelectorAll('.vj-carton-input').forEach(function(inp) { pids.add(inp.dataset.pid); });
+  document.querySelectorAll('.vj-mini-input').forEach(function(inp) { pids.add(inp.dataset.pid); });
+
+  pids.forEach(function(pid) {
+    var unitInp = document.querySelector('.vj-unit-input[data-pid="' + pid + '"]');
+    var cartonInp = document.querySelector('.vj-carton-input[data-pid="' + pid + '"]');
+    var miniInp = document.querySelector('.vj-mini-input[data-pid="' + pid + '"]');
+    var vj = unitInp && unitInp.value.trim() ? parseFloat(unitInp.value) : 0;
+    var vjColis = cartonInp && cartonInp.value.trim() ? parseFloat(cartonInp.value) : 0;
+    var stockMini = miniInp && miniInp.value.trim() ? parseInt(miniInp.value) : 0;
+    if (!vj && !vjColis && !stockMini) return;
     var prod = rayon.produits.find(function(p) { return p.id === pid; });
-    if (prod) prod.vj = vj;
-    batch.set(doc(db, 'magasins', magasinId, 'config_commande', _vjRayon, 'ventes_jour', pid), { valeur: vj });
+    if (prod) { prod.vj = vj; prod.vjColis = vjColis; prod.stockMini = stockMini; }
+    batch.set(doc(db, 'magasins', magasinId, 'config_commande', _vjRayon, 'ventes_jour', pid), { vj: vj, vjColis: vjColis, stockMini: stockMini });
     count++;
   });
   if (count > 0) {
     try {
       await batch.commit();
       setSyncDot('ok');
-      alert(count + ' VJ sauvegardees !');
+      alert(count + ' parametres sauvegardes !');
     } catch(e) {
       setSyncDot('error');
       alert('Erreur: ' + e.message);
@@ -1944,11 +1983,12 @@ function renderWzVj(container) {
 
   var prods = rayon.produits.filter(function(p) { return p.actif !== false; });
 
-  html += '<div style="display:grid;grid-template-columns:1.4fr .7fr .7fr .5fr;gap:4px;padding:6px 10px;background:#1e293b;border-radius:10px 10px 0 0">' +
-    '<div style="color:#fff;font-weight:800;font-size:.7rem">Produit</div>' +
-    '<div style="color:#fff;font-weight:800;font-size:.7rem;text-align:center">Unites/j</div>' +
-    '<div style="color:#fff;font-weight:800;font-size:.7rem;text-align:center">Colis/j</div>' +
-    '<div style="color:#fff;font-weight:800;font-size:.7rem;text-align:center">Actuel</div>' +
+  html += '<div style="font-size:.75rem;font-weight:700;color:var(--gr);margin-bottom:8px;text-align:center">Remplissez UNE seule colonne par produit : VJ/produit, VJ/colis ou Stock mini</div>';
+  html += '<div style="display:grid;grid-template-columns:1.2fr .6fr .6fr .6fr;gap:4px;padding:6px 10px;background:#1e293b;border-radius:10px 10px 0 0">' +
+    '<div style="color:#fff;font-weight:800;font-size:.65rem">Produit</div>' +
+    '<div style="color:#94a3ff;font-weight:800;font-size:.65rem;text-align:center">VJ/prod</div>' +
+    '<div style="color:#c4b5fd;font-weight:800;font-size:.65rem;text-align:center">VJ/colis</div>' +
+    '<div style="color:#fdba74;font-weight:800;font-size:.65rem;text-align:center">Stk mini</div>' +
   '</div>';
 
   for (var pi = 0; pi < prods.length; pi++) {
@@ -1956,17 +1996,16 @@ function renderWzVj(container) {
     var cond = p.cond || 1;
     var bg = pi % 2 === 0 ? '#fff' : '#faf7f0';
     var hasCond = cond > 1;
-    var currentVj = p.vj || 0;
 
-    html += '<div style="display:grid;grid-template-columns:1.4fr .7fr .7fr .5fr;gap:4px;align-items:center;padding:8px 10px;background:' + bg + ';border-bottom:1px solid #f0e8d8">' +
-      '<div><div style="font-weight:800;font-size:.78rem;color:var(--brown)">' + p.nom + '</div><div style="font-size:.58rem;color:#b0b0b0;font-weight:600">' + (p.ref || p.id) + (hasCond ? ' · x' + cond : '') + '</div></div>' +
-      '<div style="text-align:center"><input type="number" step="0.1" inputmode="decimal" data-pid="' + p.id + '" data-cond="' + cond + '" class="wz-vj-unit" style="width:55px;padding:6px 3px;border:2px solid #e5e7eb;border-radius:8px;text-align:center;font-weight:800;font-size:.82rem;font-family:var(--font);color:#1e40af;background:#f0f9ff" onfocus="this.select()" oninput="wzSyncVjUnit(this)" onblur="wzSaveOneVj(this)"></div>' +
-      '<div style="text-align:center">' + (hasCond ? '<input type="number" step="0.01" inputmode="decimal" data-pid="' + p.id + '" data-cond="' + cond + '" class="wz-vj-carton" style="width:55px;padding:6px 3px;border:2px solid #e5e7eb;border-radius:8px;text-align:center;font-weight:800;font-size:.82rem;font-family:var(--font);color:#7b1fa2;background:#faf5ff" onfocus="this.select()" oninput="wzSyncVjCarton(this)" onblur="wzSaveOneVj(this)">' : '<span style="font-size:.7rem;color:#ccc">\u2014</span>') + '</div>' +
-      '<div style="text-align:center;font-size:.75rem;font-weight:700;color:var(--gr)">' + (currentVj || '\u2014') + '</div>' +
+    html += '<div style="display:grid;grid-template-columns:1.2fr .6fr .6fr .6fr;gap:4px;align-items:center;padding:8px 10px;background:' + bg + ';border-bottom:1px solid #f0e8d8">' +
+      '<div><div style="font-weight:800;font-size:.75rem;color:var(--brown)">' + p.nom + '</div><div style="font-size:.55rem;color:#b0b0b0;font-weight:600">' + (hasCond ? 'x' + cond : '') + '</div></div>' +
+      '<div style="text-align:center"><input type="number" step="0.1" inputmode="decimal" data-pid="' + p.id + '" data-cond="' + cond + '" class="wz-vj-unit" value="' + (p.vj || '') + '" style="width:50px;padding:5px 2px;border:2px solid #e5e7eb;border-radius:8px;text-align:center;font-weight:800;font-size:.8rem;font-family:var(--font);color:#1e40af;background:#f0f9ff" onfocus="this.select()" oninput="wzSyncVjUnit(this)" onblur="wzSaveOneVj(this)"></div>' +
+      '<div style="text-align:center"><input type="number" step="0.1" inputmode="decimal" data-pid="' + p.id + '" data-cond="' + cond + '" class="wz-vj-carton" value="' + (p.vjColis || '') + '" style="width:50px;padding:5px 2px;border:2px solid #e5e7eb;border-radius:8px;text-align:center;font-weight:800;font-size:.8rem;font-family:var(--font);color:#7b1fa2;background:#faf5ff" onfocus="this.select()" oninput="wzSyncVjCarton(this)" onblur="wzSaveOneVj(this)"></div>' +
+      '<div style="text-align:center"><input type="number" step="1" min="0" inputmode="numeric" data-pid="' + p.id + '" class="wz-vj-mini" value="' + (p.stockMini || '') + '" style="width:50px;padding:5px 2px;border:2px solid #e5e7eb;border-radius:8px;text-align:center;font-weight:800;font-size:.8rem;font-family:var(--font);color:#e67e22;background:#fef9f3" onfocus="this.select()" onblur="wzSaveOneVj(this)"></div>' +
     '</div>';
   }
 
-  html += '<button onclick="wzSaveAllVj()" class="btn-p" style="margin-top:14px">&#10003; Valider les VJ</button>';
+  html += '<button onclick="wzSaveAllVj()" class="btn-p" style="margin-top:14px">&#10003; Valider</button>';
   container.innerHTML = html;
 }
 
@@ -2015,20 +2054,22 @@ window.wzSyncVjCarton = function(input) {
 // Sauvegarde immédiate d'une VJ au blur
 window.wzSaveOneVj = function(input) {
   var pid = input.dataset.pid;
-  // Récupérer la valeur en unités (toujours depuis l'input unité)
   var unitInput = document.querySelector('.wz-vj-unit[data-pid="' + pid + '"]');
-  if (!unitInput) return;
-  var val = unitInput.value.trim();
-  if (val === '') return;
-  var vj = parseFloat(val);
-  if (isNaN(vj) || vj <= 0) return;
+  var cartonInput = document.querySelector('.wz-vj-carton[data-pid="' + pid + '"]');
+  var miniInput = document.querySelector('.wz-vj-mini[data-pid="' + pid + '"]');
+
+  var vj = unitInput && unitInput.value.trim() ? parseFloat(unitInput.value) : 0;
+  var vjColis = cartonInput && cartonInput.value.trim() ? parseFloat(cartonInput.value) : 0;
+  var stockMini = miniInput && miniInput.value.trim() ? parseInt(miniInput.value) : 0;
+
+  if (!vj && !vjColis && !stockMini) return;
+
   var rayon = RAYONS.find(function(r) { return r.id === wizardRayon; });
   if (!rayon) return;
   var prod = rayon.produits.find(function(p) { return p.id === pid; });
-  if (prod) prod.vj = vj;
-  // Sauvegarder dans Firestore
-  setDoc(doc(db, 'magasins', magasinId, 'config_commande', wizardRayon, 'ventes_jour', pid), { valeur: vj });
-  // Feedback visuel
+  if (prod) { prod.vj = vj; prod.vjColis = vjColis; prod.stockMini = stockMini; }
+
+  setDoc(doc(db, 'magasins', magasinId, 'config_commande', wizardRayon, 'ventes_jour', pid), { vj: vj, vjColis: vjColis, stockMini: stockMini });
   input.style.borderColor = '#22c55e';
   setTimeout(function() { input.style.borderColor = '#e5e7eb'; }, 800);
 };
