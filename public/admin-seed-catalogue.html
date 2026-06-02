@@ -2,7 +2,7 @@
 <header><button class="back" onclick="history.back()">&#8249;</button><div class="title">Seed Catalogues Fournisseur</div></header>
 <div class="main">
 <div class="section"><h3>Catalogues Firestore</h3>
-<p style="color:#999;font-size:13px;margin-bottom:12px">Charge les produits dans <code>catalogues/{type}/produits/</code></p>
+<p style="color:#999;font-size:13px;margin-bottom:12px">Charge les produits dans <code>catalogues/{type}</code> (1 doc agr&eacute;g&eacute;)</p>
 <button class="btn" id="btn-surgeles" onclick="seed('surgeles')">Charger Surgeles</button>
 <div class="counter" id="counter-surgeles"></div>
 <div class="log" id="log-surgeles"></div>
@@ -465,16 +465,13 @@ window.seed=async function(type){
   logEl.classList.add('visible');
   counter.textContent='0 / '+items.length;
 
-  let done=0;
-  let errors=0;
-
+  const produits={};
   for(let i=0;i<items.length;i++){
     const[nom,cond,ref_f,code]=items[i];
     const cleanCode=code.replace(/\s+/g,'').replace(/[\/%.#$\[\]]/g,'_');
     const condNombre=parseCondNombre(cond);
     const categorie=getCat(cleanCode);
-
-    const data={
+    produits[cleanCode]={
       nom:nom,
       ref_fournisseur:ref_f,
       code:cleanCode,
@@ -486,23 +483,20 @@ window.seed=async function(type){
       ventes_jour_defaut:null,
       stock_mini:0
     };
-
-    try{
-      await setDoc(doc(db,'catalogues',type,'produits',cleanCode),data);
-      done++;
-      logEl.innerHTML+='<p style="color:#2e7d32">OK '+cleanCode+' — '+nom+'</p>';
-    }catch(e){
-      errors++;
-      logEl.innerHTML+='<p style="color:#e53935">ERR '+cleanCode+' — '+e.message+'</p>';
-    }
-    counter.textContent=done+' / '+items.length+(errors?' ('+errors+' erreurs)':'');
-    logEl.scrollTop=logEl.scrollHeight;
+    logEl.innerHTML+='<p style="color:#2e7d32">OK '+cleanCode+' — '+nom+'</p>';
+    counter.textContent=(i+1)+' / '+items.length;
   }
 
-  btn.textContent='Done ! '+done+' produits charges';
-  btn.classList.add('done');
-  if(errors)btn.classList.add('error');
-  counter.textContent=done+' / '+items.length+' termines'+(errors?' — '+errors+' erreurs':'');
+  try{
+    await setDoc(doc(db,'catalogues',type),{produits:produits});
+    btn.textContent='Done ! '+items.length+' produits charges (1 doc)';
+    btn.classList.add('done');
+    counter.textContent=items.length+' produits en 1 document';
+  }catch(e){
+    btn.textContent='Erreur !';
+    btn.classList.add('error');
+    logEl.innerHTML+='<p style="color:#e53935">ERREUR ecriture : '+e.message+'</p>';
+  }
 };
 </script>
 </body></html>

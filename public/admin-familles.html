@@ -102,7 +102,7 @@ header{background:linear-gradient(160deg,#ab47bc 0%,#9c27b0 50%,#7b1fa2 100%);pa
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import{getAuth,onAuthStateChanged,signInWithEmailAndPassword}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import{getFirestore,collection,getDocs,doc,updateDoc,deleteDoc}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import{getFirestore,collection,getDocs,doc,getDoc,updateDoc,deleteDoc}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const app=initializeApp({
   apiKey:'AIzaSyAHNdciMVNz15NoAXfc7yi9q4EnQJW8PKE',
@@ -160,11 +160,12 @@ async function loadProducts(type){
 
   try{
     if(!cache[type]){
-      const snap=await getDocs(collection(db,'catalogues',type,'produits'));
+      const catDoc=await getDoc(doc(db,'catalogues',type));
       const prods=[];
-      snap.forEach(d=>{
-        prods.push({id:d.id,...d.data()});
-      });
+      if(catDoc.exists()){
+        const produitsMap=catDoc.data().produits||{};
+        Object.keys(produitsMap).forEach(k=>{prods.push({id:k,...produitsMap[k]});});
+      }
       cache[type]=prods;
     }
 
@@ -218,7 +219,7 @@ async function loadProducts(type){
       sel.addEventListener('change',async()=>{
         const val=sel.value;
         try{
-          await updateDoc(doc(db,'catalogues',type,'produits',p.id),{categorie:val});
+          var upd={};upd['produits.'+p.id+'.categorie']=val;await updateDoc(doc(db,'catalogues',type),upd);
           // Update cache
           const cached=cache[type].find(x=>x.id===p.id);
           if(cached)cached.categorie=val;
@@ -347,7 +348,7 @@ window.prefillFamilies = async function() {
     var fam = guessFamily(p, currentType);
     if (!fam) continue;
     try {
-      await updateDoc(doc(db, 'catalogues', currentType, 'produits', p.id), { categorie: fam });
+      var upd={};upd['produits.'+p.id+'.categorie']=fam;await updateDoc(doc(db,'catalogues',currentType),upd);
       p.categorie = fam;
       count++;
     } catch(e) { console.error(e); }
@@ -406,7 +407,8 @@ window.removeDuplicates = async function() {
   var count = 0;
   for (var d = 0; d < toDelete.length; d++) {
     try {
-      await deleteDoc(doc(db, 'catalogues', currentType, 'produits', toDelete[d]));
+      var { deleteField: df } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+      var delUp={};delUp['produits.'+toDelete[d]]=df();await updateDoc(doc(db,'catalogues',currentType),delUp);
       count++;
     } catch(e) { console.error(e); }
   }

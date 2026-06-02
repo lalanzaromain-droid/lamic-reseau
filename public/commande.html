@@ -216,7 +216,7 @@ header{background:linear-gradient(160deg,#ab47bc 0%,#9c27b0 50%,#7b1fa2 100%);pa
       <div class="card" style="margin-bottom:14px;border:3px solid var(--be)" id="jours-card">
         <div style="font-weight:800;color:var(--brown);margin-bottom:6px">&#x1F4C5; Jours a tenir</div>
         <div style="background:#fff8e1;border-radius:8px;padding:7px 10px;margin-bottom:10px;font-size:.78rem;color:var(--brown)">
-          <strong>Dimanche &#x2192; 5j</strong> &middot; <strong>Mercredi &#x2192; 6j</strong> &middot; Ferie = +1j
+          <strong>Dimanche &#x2192; 5j</strong> &middot; <strong>Mercredi &#x2192; 6j</strong>
         </div>
         <div style="display:flex;align-items:center;gap:12px">
           <input type="number" id="jours-input" min="1" max="14"
@@ -528,13 +528,15 @@ async function loadOneRayon(rayon) {
   // Etape 1 : charger depuis Firestore (en parallele catalogue + config magasin)
   try {
     var results = await Promise.all([
-      getDocs(collection(db, 'catalogues', type, 'produits')),
+      getDoc(doc(db, 'catalogues', type)),
       getDocs(collection(db, 'magasins', magasinId, 'config_commande', type, 'ventes_jour')).catch(function() { return {docs:[]}; }),
       getDocs(collection(db, 'magasins', magasinId, 'config_commande', type, 'ordre_stock')).catch(function() { return {docs:[]}; }),
       getDocs(collection(db, 'magasins', magasinId, 'config_commande', type, 'produits_inactifs')).catch(function() { return {docs:[]}; })
     ]);
 
-    var prods = results[0].docs.map(function(d) { return { id: d.id, ...d.data() }; }).filter(function(p) { return p.actif !== false; });
+    var catDoc = results[0];
+    var produitsMap = catDoc.exists() ? catDoc.data().produits || {} : {};
+    var prods = Object.keys(produitsMap).map(function(k) { return { id: k, ...produitsMap[k] }; }).filter(function(p) { return p.actif !== false; });
     var vjMap = {}, ordreMap = {}, inactifMap = {};
     results[1].docs.forEach(function(d) {
       var data = d.data();
@@ -1649,6 +1651,16 @@ async function checkWizard() {
     showMainApp();
   } else {
     showWizard();
+    // Ajouter bouton passer si pas deja present
+    if (!document.getElementById('btn-skip-wizard')) {
+      var skipBtn = document.createElement('button');
+      skipBtn.id = 'btn-skip-wizard';
+      skipBtn.className = 'btn-p';
+      skipBtn.style.cssText = 'margin-top:16px;background:linear-gradient(145deg,#999,#777);box-shadow:0 4px 0 #555;font-size:.9rem';
+      skipBtn.textContent = 'Passer et explorer l\u2019app';
+      skipBtn.onclick = function() { showMainApp(); };
+      document.getElementById('wizard-screen').appendChild(skipBtn);
+    }
   }
 }
 
@@ -2081,11 +2093,26 @@ window.wzSaveOneOrdre = function(input) {
   var rang = val ? parseInt(val) : 999;
   var rayon = RAYONS.find(function(r) { return r.id === wizardRayon; });
   if (!rayon) return;
-  var prod = rayon.produits.find(function(p) { return p.id === pid; });
-  if (prod) prod.rangStock = rang;
-  setDoc(doc(db, 'magasins', magasinId, 'config_commande', wizardRayon, 'ordre_stock', pid), { rang: rang });
-  input.style.borderColor = '#22c55e';
-  setTimeout(function() { input.style.borderColor = 'var(--be)'; }, 800);
+  var prods = rayon.produits.filter(function(p) { return p.actif !== false; });
+
+  // Placer le produit à sa nouvelle position et renuméroter tout
+  var moved = prods.find(function(p) { return p.id === pid; });
+  if (moved) moved.rangStock = rang;
+  // Trier : par rang, et à rang égal le produit qu'on vient de modifier passe en premier
+  prods.sort(function(a, b) {
+    var ra = a.rangStock || 999, rb = b.rangStock || 999;
+    if (ra !== rb) return ra - rb;
+    if (a.id === pid) return -1;
+    if (b.id === pid) return 1;
+    return 0;
+  });
+  // Renuméroter 1, 2, 3... et sauver en Firestore
+  for (var i = 0; i < prods.length; i++) {
+    prods[i].rangStock = i + 1;
+    setDoc(doc(db, 'magasins', magasinId, 'config_commande', wizardRayon, 'ordre_stock', prods[i].id), { rang: i + 1 });
+  }
+  rayon.produits.sort(function(a, b) { return (a.rangStock || 999) - (b.rangStock || 999); });
+  wzSetOrdreMode('rang');
 };
 
 window.wzSaveAllVj = async function() {
@@ -2116,6 +2143,8 @@ window.wzSaveAllVj = async function() {
 
 // -- STEP 4: LISTE STOCK (ORDRE) --
 var wzOrdreMode = 'drag'; // 'drag' ou 'rang'
+window.renderWzOrdre = renderWzOrdre;
+window.wzSetOrdreMode = function(mode) { wzOrdreMode = mode; renderWzOrdre(document.getElementById('wizard-page-content')); };
 
 function renderWzOrdre(container) {
   var html = '<div style="display:flex;gap:6px;margin-bottom:14px">';
@@ -2132,8 +2161,8 @@ function renderWzOrdre(container) {
 
   // Toggle drag / rang
   html += '<div style="display:flex;gap:8px;margin-bottom:10px">' +
-    '<button onclick="wzOrdreMode=\'drag\';renderWzOrdre(document.getElementById(\'wizard-page-content\'))" style="flex:1;padding:8px;border-radius:10px;font-size:.78rem;font-weight:800;background:' + (wzOrdreMode === 'drag' ? '#7b1fa2' : 'var(--be)') + ';color:' + (wzOrdreMode === 'drag' ? '#fff' : 'var(--brown)') + '">&#9776; Drag & Drop</button>' +
-    '<button onclick="wzOrdreMode=\'rang\';renderWzOrdre(document.getElementById(\'wizard-page-content\'))" style="flex:1;padding:8px;border-radius:10px;font-size:.78rem;font-weight:800;background:' + (wzOrdreMode === 'rang' ? '#7b1fa2' : 'var(--be)') + ';color:' + (wzOrdreMode === 'rang' ? '#fff' : 'var(--brown)') + '">123 Numero de rang</button>' +
+    '<button onclick="wzSetOrdreMode(\'drag\')" style="flex:1;padding:8px;border-radius:10px;font-size:.78rem;font-weight:800;background:' + (wzOrdreMode === 'drag' ? '#7b1fa2' : 'var(--be)') + ';color:' + (wzOrdreMode === 'drag' ? '#fff' : 'var(--brown)') + '">&#9776; Drag & Drop</button>' +
+    '<button onclick="wzSetOrdreMode(\'rang\')" style="flex:1;padding:8px;border-radius:10px;font-size:.78rem;font-weight:800;background:' + (wzOrdreMode === 'rang' ? '#7b1fa2' : 'var(--be)') + ';color:' + (wzOrdreMode === 'rang' ? '#fff' : 'var(--brown)') + '">123 Numero de rang</button>' +
   '</div>';
 
   html += '<div style="font-size:.78rem;color:var(--gr);font-weight:700;margin-bottom:8px">' +

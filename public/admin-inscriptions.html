@@ -1,0 +1,218 @@
+<!DOCTYPE html><html lang="fr"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin — Inscriptions</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--font:-apple-system,BlinkMacSystemFont,sans-serif;--brown:#3e2723;--gr:#999;--be:#e8e0d0;--wh:#FFF8E7;--r:16px;--sh:0 2px 12px rgba(0,0,0,.08)}
+body{font-family:var(--font);background:#f5f0ff;min-height:100vh}
+header{background:linear-gradient(160deg,#ab47bc,#7b1fa2);padding:16px 20px;color:#fff;display:flex;align-items:center;gap:12px}
+header a{color:#fff;text-decoration:none;font-size:1.3rem}
+header h1{font-size:1.05rem;font-weight:900}
+.wrap{max-width:600px;margin:20px auto;padding:0 16px}
+.card{background:#fff;border-radius:var(--r);padding:20px;margin-bottom:16px;box-shadow:var(--sh)}
+.card h2{font-size:1rem;color:var(--brown);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.badge{background:#7b1fa2;color:#fff;font-size:.7rem;font-weight:800;padding:2px 8px;border-radius:20px}
+.empty{color:var(--gr);font-size:.85rem;text-align:center;padding:20px 0}
+.insc-item{padding:14px;border:2px solid var(--be);border-radius:12px;margin-bottom:10px;transition:border-color .2s}
+.insc-item.nouveau{border-left:4px solid #7b1fa2}
+.insc-item.traite{border-left:4px solid #22c55e}
+.insc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
+.insc-nom{font-weight:900;font-size:.95rem;color:var(--brown)}
+.insc-date{font-size:.7rem;color:var(--gr);font-weight:700}
+.insc-detail{font-size:.82rem;color:#555;font-weight:600;line-height:1.5}
+.insc-detail span{color:var(--gr);font-size:.75rem}
+.insc-actions{display:flex;gap:8px;margin-top:10px}
+.btn-sm{padding:8px 14px;border:none;border-radius:10px;font-size:.8rem;font-weight:800;cursor:pointer;font-family:var(--font)}
+.btn-create{background:linear-gradient(145deg,#ab47bc,#7b1fa2);color:#fff;box-shadow:0 2px 0 #6a1b9a}
+.btn-create:active{transform:translateY(1px);box-shadow:none}
+.btn-done{background:#e8f5e9;color:#166534}
+.btn-del{background:#fef2f2;color:#991b1b}
+.stat-bar{display:flex;gap:12px;margin-bottom:14px}
+.stat{background:#f3e5f5;border-radius:10px;padding:8px 14px;font-size:.8rem;font-weight:800;color:#7b1fa2}
+</style>
+</head><body>
+<header>
+  <a href="home.html">&#8249;</a>
+  <h1>Inscriptions re&ccedil;ues</h1>
+</header>
+<div id="login-screen" style="display:none;padding:40px 20px;max-width:400px;margin:0 auto;text-align:center">
+  <div style="font-size:3rem;margin-bottom:12px">&#x1F512;</div>
+  <div style="font-size:1.1rem;font-weight:900;color:var(--brown);margin-bottom:4px">Administration</div>
+  <div style="font-size:.85rem;color:var(--gr);margin-bottom:24px">Connectez-vous avec votre compte admin</div>
+  <div style="display:flex;flex-direction:column;gap:10px;max-width:340px;margin:0 auto">
+    <input id="login-email" type="email" placeholder="Email" style="padding:14px;border:3px solid var(--be);border-radius:12px;font-size:1rem;font-weight:700;color:var(--brown);background:var(--wh);font-family:var(--font)">
+    <input id="login-password" type="password" placeholder="Mot de passe" style="padding:14px;border:3px solid var(--be);border-radius:12px;font-size:1rem;font-weight:700;color:var(--brown);background:var(--wh);font-family:var(--font)">
+    <button onclick="doLogin()" style="background:linear-gradient(145deg,#ab47bc,#7b1fa2);color:#fff;font-weight:800;font-size:1rem;padding:14px;border-radius:12px;border:none;cursor:pointer;font-family:var(--font);box-shadow:0 4px 0 #6a1b9a">Se connecter</button>
+    <div id="login-error" style="display:none;color:#dc2626;font-weight:700;font-size:.85rem;margin-top:4px"></div>
+  </div>
+</div>
+
+<div class="wrap" id="admin-content" style="display:none">
+  <div class="card">
+    <h2>Demandes <span class="badge" id="count-new">0</span></h2>
+    <div class="stat-bar">
+      <div class="stat" id="stat-new">&#x1F7E3; Nouvelles : 0</div>
+      <div class="stat" id="stat-done" style="background:#dcfce7;color:#166534">&#x2705; Trait&eacute;es : 0</div>
+    </div>
+    <div id="list-content"><div class="empty">Chargement...</div></div>
+  </div>
+</div>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
+import { initializeAppCheck, ReCaptchaV3Provider } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app-check.js';
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
+import { getFirestore, collection, getDocs, doc, getDoc, updateDoc, deleteDoc, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+
+var fApp = initializeApp({
+  apiKey:'AIzaSyAHNdciMVNz15NoAXfc7yi9q4EnQJW8PKE',
+  authDomain:'teamconnect-valence-2026.firebaseapp.com',
+  projectId:'teamconnect-valence-2026',
+  storageBucket:'teamconnect-valence-2026.firebasestorage.app',
+  messagingSenderId:'47179706726',
+  appId:'1:47179706726:web:6403fd5f9dc9a3e10518a7'
+});
+initializeAppCheck(fApp, { provider: new ReCaptchaV3Provider('6LcCmfMsAAAAAIORt9Br0MbH8Y6Cjqe7TV-hw6HH'), isTokenAutoRefreshEnabled: true });
+var auth = getAuth(fApp);
+var db = getFirestore(fApp);
+var inscriptions = [];
+
+onAuthStateChanged(auth, async function(user) {
+  if (!user) {
+    document.getElementById('login-screen').style.display = 'block';
+    document.getElementById('admin-content').style.display = 'none';
+    return;
+  }
+  var userDoc = await getDoc(doc(db, 'users', user.uid));
+  if (!userDoc.exists() || userDoc.data().role !== 'admin') {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('admin-content').style.display = 'block';
+    document.getElementById('admin-content').innerHTML = '<div class="card" style="text-align:center"><div style="font-size:3rem">&#x1F512;</div><div style="font-weight:700;margin-top:8px;color:var(--brown)">Acc&egrave;s admin uniquement</div></div>';
+    return;
+  }
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('admin-content').style.display = 'block';
+  loadInscriptions();
+});
+
+window.doLogin = async function() {
+  var email = document.getElementById('login-email').value.trim();
+  var pwd = document.getElementById('login-password').value;
+  var errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+  if (!email || !pwd) { errEl.textContent = 'Remplissez email et mot de passe'; errEl.style.display = 'block'; return; }
+  try {
+    await signInWithEmailAndPassword(auth, email, pwd);
+  } catch(e) {
+    errEl.textContent = 'Email ou mot de passe incorrect';
+    errEl.style.display = 'block';
+  }
+};
+
+async function loadInscriptions() {
+  var container = document.getElementById('list-content');
+  try {
+    var q = query(collection(db, 'inscriptions'), orderBy('date', 'desc'));
+    var snap = await getDocs(q);
+    if (snap.empty) { container.innerHTML = '<div class="empty">Aucune demande pour le moment</div>'; return; }
+
+    inscriptions = [];
+    snap.docs.forEach(function(d) { inscriptions.push({ id: d.id, ...d.data() }); });
+
+    var nbNew = inscriptions.filter(function(i) { return i.statut === 'nouveau'; }).length;
+    var nbDone = inscriptions.filter(function(i) { return i.statut === 'traite'; }).length;
+    document.getElementById('count-new').textContent = nbNew;
+    document.getElementById('stat-new').innerHTML = '&#x1F7E3; Nouvelles : ' + nbNew;
+    document.getElementById('stat-done').innerHTML = '&#x2705; Trait&eacute;es : ' + nbDone;
+
+    var html = '';
+    inscriptions.forEach(function(insc) {
+      var dateStr = '';
+      if (insc.date && insc.date.toDate) {
+        var d = insc.date.toDate();
+        dateStr = d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      }
+      var isNew = insc.statut === 'nouveau';
+      var hasLink = insc.resetLink;
+      html += '<div class="insc-item ' + insc.statut + '" id="insc-' + insc.id + '">' +
+        '<div class="insc-header"><div class="insc-nom">' + insc.nom + '</div><div class="insc-date">' + dateStr + '</div></div>' +
+        '<div class="insc-detail">' +
+          '<span>Ville :</span> ' + insc.ville + '<br>' +
+          '<span>Responsable :</span> ' + insc.responsable + '<br>' +
+          '<span>Email :</span> ' + insc.email + '<br>' +
+          (insc.telephone ? '<span>T&eacute;l :</span> ' + insc.telephone + '<br>' : '') +
+        '</div>';
+      if (hasLink) {
+        var smsBody = 'Salut ' + (insc.responsable || '') + ' ! Ton compte Team Connect est pr\u00eat. Clique sur ce lien pour cr\u00e9er ton mot de passe : ' + insc.resetLink + ' \u2014 Ensuite connecte-toi sur https://lamic-reseau.web.app/commande.html';
+        var smsHref = 'sms:' + (insc.telephone || '') + '?&body=' + encodeURIComponent(smsBody);
+        html += '<div style="display:flex;gap:8px;margin-top:10px">' +
+          '<a href="' + smsHref + '" style="flex:1;padding:10px;border-radius:10px;background:linear-gradient(145deg,#ab47bc,#7b1fa2);color:#fff;font-weight:800;font-size:.8rem;text-align:center;text-decoration:none;box-shadow:0 2px 0 #6a1b9a">&#x1F4F2; SMS</a>' +
+          '<button class="btn-sm" onclick="copyLink(\'' + insc.id + '\')" style="flex:1;background:#e8f5e9;color:#166534;padding:10px;font-size:.8rem">&#x1F4CB; Copier le message</button>' +
+          '</div>' +
+          '<div style="margin-top:8px;padding:10px;background:#f5f0ff;border-radius:8px;word-break:break-all;font-size:.7rem;color:#555;font-weight:600;user-select:all">' + insc.resetLink + '</div>';
+      }
+      html += '<div class="insc-actions">' +
+          (isNew ? '<button class="btn-sm btn-create" onclick="goCreate(\'' + insc.id + '\')">Cr&eacute;er le compte</button>' : '') +
+          (isNew ? '<button class="btn-sm btn-done" onclick="markDone(\'' + insc.id + '\')">Marquer trait&eacute;</button>' : '') +
+          '<button class="btn-sm btn-del" onclick="delInsc(\'' + insc.id + '\')">Supprimer</button>' +
+        '</div></div>';
+    });
+    container.innerHTML = html;
+  } catch(e) {
+    container.innerHTML = '<div class="empty" style="color:#dc2626">Erreur : ' + e.message + '</div>';
+  }
+}
+
+window.goCreate = async function(id) {
+  var insc = inscriptions.find(function(i) { return i.id === id; });
+  if (!insc) return;
+  var btn = document.querySelector('#insc-' + id + ' .btn-create');
+  btn.disabled = true; btn.textContent = 'Cr\u00e9ation...';
+  try {
+    var token = await auth.currentUser.getIdToken();
+    var resp = await fetch('https://us-central1-teamconnect-valence-2026.cloudfunctions.net/createMagasin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ nom: insc.nom, ville: insc.ville, responsable: insc.responsable, email: insc.email, telephone: insc.telephone || '' })
+    });
+    var data = await resp.json();
+    if (data.success) {
+      await updateDoc(doc(db, 'inscriptions', id), { statut: 'traite', resetLink: data.resetLink });
+      loadInscriptions();
+    } else {
+      btn.disabled = false; btn.textContent = 'Cr\u00e9er le compte';
+      alert('Erreur : ' + (data.error || 'inconnue'));
+    }
+  } catch(e) {
+    btn.disabled = false; btn.textContent = 'Cr\u00e9er le compte';
+    alert('Erreur : ' + e.message);
+  }
+};
+
+window.markDone = async function(id) {
+  try {
+    await updateDoc(doc(db, 'inscriptions', id), { statut: 'traite' });
+    loadInscriptions();
+  } catch(e) { alert('Erreur : ' + e.message); }
+};
+
+window.copyLink = function(id) {
+  var insc = inscriptions.find(function(i) { return i.id === id; });
+  if (!insc || !insc.resetLink) return;
+  var msg = 'Salut ' + (insc.responsable || '') + ' ! Ton compte Team Connect est pr\u00eat. Clique sur ce lien pour cr\u00e9er ton mot de passe : ' + insc.resetLink + ' \u2014 Ensuite connecte-toi sur https://lamic-reseau.web.app/commande.html';
+  navigator.clipboard.writeText(msg).then(function() {
+    var btn = document.querySelector('#insc-' + id + ' .btn-sm[onclick*="copyLink"]');
+    if (btn) { btn.textContent = '\u2714 Copi\u00e9 !'; setTimeout(function() { btn.innerHTML = '&#x1F4CB; Copier le lien'; }, 2000); }
+  });
+};
+
+window.delInsc = async function(id) {
+  if (!confirm('Supprimer cette demande ?')) return;
+  try {
+    await deleteDoc(doc(db, 'inscriptions', id));
+    loadInscriptions();
+  } catch(e) { alert('Erreur : ' + e.message); }
+};
+</script>
+</body></html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html><html lang="fr"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Team Connect — Inscription</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--font:'Nunito',sans-serif;--brown:#6b4c11;--gr:#999;--be:#e8e0d0;--wh:#FFF8E7;--r:16px;--sh:0 2px 12px rgba(107,76,17,0.08)}
+body{font-family:var(--font);background:var(--wh);min-height:100vh}
+header{background:linear-gradient(160deg,#ab47bc 0%,#9c27b0 50%,#7b1fa2 100%);padding:18px 20px;text-align:center;box-shadow:0 4px 16px rgba(156,39,176,0.3)}
+header h1{font-size:1.1rem;font-weight:900;color:#fff}
+header p{font-size:.75rem;color:rgba(255,255,255,.7);font-weight:700;margin-top:2px}
+.wrap{max-width:480px;margin:0 auto;padding:20px 16px 40px}
+.intro{background:#f3e5f5;border-radius:var(--r);padding:16px;margin-bottom:20px;text-align:center}
+.intro .icon{font-size:2.2rem;margin-bottom:6px}
+.intro h2{font-size:1rem;font-weight:900;color:var(--brown);margin-bottom:6px}
+.intro p{font-size:.82rem;color:var(--gr);font-weight:600;line-height:1.4}
+.card{background:#fff;border-radius:var(--r);padding:20px;box-shadow:var(--sh)}
+label{display:block;font-size:.8rem;font-weight:700;color:var(--gr);margin-bottom:4px;margin-top:14px}
+label:first-child{margin-top:0}
+label .req{color:#e53935}
+input[type="text"],input[type="email"],input[type="tel"]{width:100%;padding:13px;border:3px solid var(--be);border-radius:12px;font-size:.95rem;font-weight:700;color:var(--brown);background:var(--wh);font-family:var(--font);transition:border-color .2s}
+input:focus{border-color:#9c27b0;outline:none}
+.btn{display:block;width:100%;padding:15px;border:none;border-radius:12px;font-size:1rem;font-weight:800;cursor:pointer;font-family:var(--font);margin-top:20px;background:linear-gradient(145deg,#ab47bc,#7b1fa2);color:#fff;box-shadow:0 4px 0 #6a1b9a;transition:transform .1s}
+.btn:active{transform:translateY(2px);box-shadow:0 2px 0 #6a1b9a}
+.btn:disabled{background:#ccc;box-shadow:none;cursor:default}
+#result{margin-top:14px;padding:14px;border-radius:12px;font-size:.85rem;font-weight:700;display:none;text-align:center}
+#result.ok{display:block;background:#e8f5e9;color:#166534}
+#result.err{display:block;background:#fef2f2;color:#991b1b}
+.note{text-align:center;margin-top:16px;font-size:.75rem;color:var(--gr);font-weight:600}
+</style>
+</head><body>
+
+<header>
+  <h1>Team Connect</h1>
+  <p>R&eacute;seau</p>
+</header>
+
+<div class="wrap">
+  <div class="intro">
+    <div class="icon">&#x1F4CB;</div>
+    <h2>Rejoindre le test</h2>
+    <p>Remplissez ce formulaire pour inscrire votre magasin. Vous recevrez un SMS quand votre lien de cr&eacute;ation de mot de passe sera envoy&eacute;.</p>
+  </div>
+
+  <div class="card">
+    <label>Nom du magasin <span class="req">*</span></label>
+    <input type="text" id="f-nom" placeholder="">
+
+    <label>Ville <span class="req">*</span></label>
+    <input type="text" id="f-ville" placeholder="">
+
+    <label>Responsable (nom pr&eacute;nom) <span class="req">*</span></label>
+    <input type="text" id="f-responsable" placeholder="">
+
+    <label>Email <span class="req">*</span></label>
+    <input type="email" id="f-email" placeholder="">
+
+    <label>T&eacute;l&eacute;phone <span class="req">*</span></label>
+    <input type="tel" id="f-tel" placeholder="">
+
+    <button class="btn" id="btn-submit" onclick="submitInscription()">Envoyer ma demande</button>
+    <div id="result"></div>
+  </div>
+
+  <div class="note">&#x1F512; Vos informations sont s&eacute;curis&eacute;es et utilis&eacute;es uniquement pour cr&eacute;er votre acc&egrave;s.</div>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
+import { initializeAppCheck, ReCaptchaV3Provider } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app-check.js';
+import { getFirestore, collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+
+var fApp = initializeApp({
+  apiKey:'AIzaSyAHNdciMVNz15NoAXfc7yi9q4EnQJW8PKE',
+  authDomain:'teamconnect-valence-2026.firebaseapp.com',
+  projectId:'teamconnect-valence-2026',
+  storageBucket:'teamconnect-valence-2026.firebasestorage.app',
+  messagingSenderId:'47179706726',
+  appId:'1:47179706726:web:6403fd5f9dc9a3e10518a7'
+});
+initializeAppCheck(fApp, { provider: new ReCaptchaV3Provider('6LcCmfMsAAAAAIORt9Br0MbH8Y6Cjqe7TV-hw6HH'), isTokenAutoRefreshEnabled: true });
+var db = getFirestore(fApp);
+
+window.submitInscription = async function() {
+  var nom = document.getElementById('f-nom').value.trim();
+  var ville = document.getElementById('f-ville').value.trim();
+  var responsable = document.getElementById('f-responsable').value.trim();
+  var email = document.getElementById('f-email').value.trim();
+  var telephone = document.getElementById('f-tel').value.trim();
+  var resultEl = document.getElementById('result');
+  resultEl.className = ''; resultEl.style.display = 'none';
+
+  if (!nom || !ville || !responsable || !email || !telephone) {
+    resultEl.className = 'err';
+    resultEl.textContent = 'Merci de remplir tous les champs obligatoires (*)';
+    resultEl.style.display = 'block';
+    return;
+  }
+
+  var btn = document.getElementById('btn-submit');
+  btn.disabled = true; btn.textContent = 'Envoi en cours...';
+
+  try {
+    await addDoc(collection(db, 'inscriptions'), {
+      nom: nom,
+      ville: ville,
+      responsable: responsable,
+      email: email,
+      telephone: telephone || '',
+      statut: 'nouveau',
+      date: serverTimestamp()
+    });
+    resultEl.className = 'ok';
+    resultEl.innerHTML = '&#10003; Demande envoy&eacute;e ! Vous recevrez un SMS avec votre lien de connexion.';
+    resultEl.style.display = 'block';
+    // Reset form
+    document.getElementById('f-nom').value = '';
+    document.getElementById('f-ville').value = '';
+    document.getElementById('f-responsable').value = '';
+    document.getElementById('f-email').value = '';
+    document.getElementById('f-tel').value = '';
+    btn.textContent = 'Demande envoy\u00e9e \u2714';
+  } catch(e) {
+    resultEl.className = 'err';
+    resultEl.textContent = 'Erreur : ' + e.message;
+    resultEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Envoyer ma demande';
+  }
+};
+</script>
+</body></html>

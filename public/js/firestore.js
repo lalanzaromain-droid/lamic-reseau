@@ -8,16 +8,25 @@ import {
 // ─── Catalogues (globaux) ───────────────────────────────
 
 async function getCatalogue(type) {
-  const snap = await getDocs(collection(db, 'catalogues', type, 'produits'));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const d = await getDoc(doc(db, 'catalogues', type));
+  if (!d.exists()) return [];
+  const produits = d.data().produits || {};
+  return Object.keys(produits).map(k => ({ id: k, ...produits[k] }));
 }
 
 async function setCatalogueProduit(type, produitId, data) {
-  await setDoc(doc(db, 'catalogues', type, 'produits', produitId), data, { merge: true });
+  const path = 'produits.' + produitId;
+  const update = {};
+  update[path] = data;
+  await setDoc(doc(db, 'catalogues', type), update, { merge: true });
 }
 
 async function deleteCatalogueProduit(type, produitId) {
-  await deleteDoc(doc(db, 'catalogues', type, 'produits', produitId));
+  const { deleteField } = await import('https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js');
+  const path = 'produits.' + produitId;
+  const update = {};
+  update[path] = deleteField();
+  await updateDoc(doc(db, 'catalogues', type), update);
 }
 
 // ─── Config magasin (ordre stock, ventes/jour perso) ────

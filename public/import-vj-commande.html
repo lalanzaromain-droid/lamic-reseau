@@ -1250,11 +1250,11 @@ function handleFile(file) {
 // ==========================================
 async function loadFirebaseAndMatch(products) {
   try {
-    // Read all 3 catalogues from Firestore
-    var [surgSnap, fraisSnap, boissonsSnap] = await Promise.all([
-      getDocs(collection(db, 'catalogues', 'surgeles', 'produits')),
-      getDocs(collection(db, 'catalogues', 'frais', 'produits')),
-      getDocs(collection(db, 'catalogues', 'boissons', 'produits'))
+    // Read all 3 catalogues from Firestore (1 doc chacun)
+    var [surgDoc, fraisDoc, boissonsDoc] = await Promise.all([
+      getDoc(doc(db, 'catalogues', 'surgeles')),
+      getDoc(doc(db, 'catalogues', 'frais')),
+      getDoc(doc(db, 'catalogues', 'boissons'))
     ]);
 
     // Also read existing VJ from magasin config
@@ -1273,40 +1273,25 @@ async function loadFirebaseAndMatch(products) {
     vjBoissonsSnap.docs.forEach(function(d) { vjBoissonsMap[d.id] = d.data().valeur || 0; });
 
     // Convert catalogue docs to the format expected by matchWithFirebase
+    var surgProds = surgDoc.exists() ? surgDoc.data().produits || {} : {};
     fbSurgeles = {};
-    surgSnap.docs.forEach(function(d) {
-      var data = d.data();
-      fbSurgeles[d.id] = {
-        nom: data.nom,
-        ref: data.ref_fournisseur,
-        code: d.id,
-        cond: data.conditionnement_nombre,
-        vj: vjSurgMap[d.id] || data.ventes_jour_defaut || 0
-      };
+    Object.keys(surgProds).forEach(function(k) {
+      var data = surgProds[k];
+      fbSurgeles[k] = { nom: data.nom, ref: data.ref_fournisseur, code: k, cond: data.conditionnement_nombre, vj: vjSurgMap[k] || data.ventes_jour_defaut || 0 };
     });
 
+    var fraisProds = fraisDoc.exists() ? fraisDoc.data().produits || {} : {};
     fbFrais = {};
-    fraisSnap.docs.forEach(function(d) {
-      var data = d.data();
-      fbFrais[d.id] = {
-        nom: data.nom,
-        ref: data.ref_fournisseur,
-        code: d.id,
-        cond: data.conditionnement_nombre,
-        vj: vjFraisMap[d.id] || data.ventes_jour_defaut || 0
-      };
+    Object.keys(fraisProds).forEach(function(k) {
+      var data = fraisProds[k];
+      fbFrais[k] = { nom: data.nom, ref: data.ref_fournisseur, code: k, cond: data.conditionnement_nombre, vj: vjFraisMap[k] || data.ventes_jour_defaut || 0 };
     });
 
+    var boissonsProds = boissonsDoc.exists() ? boissonsDoc.data().produits || {} : {};
     fbMetro = {};
-    boissonsSnap.docs.forEach(function(d) {
-      var data = d.data();
-      fbMetro[d.id] = {
-        nom: data.nom,
-        ref: data.ref_fournisseur,
-        code: d.id,
-        cond: data.conditionnement_nombre,
-        vj: vjBoissonsMap[d.id] || data.ventes_jour_defaut || 0
-      };
+    Object.keys(boissonsProds).forEach(function(k) {
+      var data = boissonsProds[k];
+      fbMetro[k] = { nom: data.nom, ref: data.ref_fournisseur, code: k, cond: data.conditionnement_nombre, vj: vjBoissonsMap[k] || data.ventes_jour_defaut || 0 };
     });
 
     matched = matchWithFirebase(products);
