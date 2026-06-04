@@ -2106,11 +2106,14 @@ window.wzSaveOneOrdre = function(input) {
     if (b.id === pid) return 1;
     return 0;
   });
-  // Renuméroter 1, 2, 3... et sauver en Firestore
+  // Renuméroter 1, 2, 3... et sauver en Firestore (batch)
+  setSyncDot('syncing');
+  var batch = writeBatch(db);
   for (var i = 0; i < prods.length; i++) {
     prods[i].rangStock = i + 1;
-    setDoc(doc(db, 'magasins', magasinId, 'config_commande', wizardRayon, 'ordre_stock', prods[i].id), { rang: i + 1 });
+    batch.set(doc(db, 'magasins', magasinId, 'config_commande', wizardRayon, 'ordre_stock', prods[i].id), { rang: i + 1 });
   }
+  batch.commit().then(function() { setSyncDot('ok'); }).catch(function(e) { setSyncDot('error'); alert('Erreur sauvegarde : ' + e.message); });
   rayon.produits.sort(function(a, b) { return (a.rangStock || 999) - (b.rangStock || 999); });
   wzSetOrdreMode('rang');
 };
@@ -2431,7 +2434,8 @@ function initWzDragDrop() {
             if (prod) prod.rangStock = u + 1;
           }
         }
-        batch.commit();
+        setSyncDot('syncing');
+        batch.commit().then(function() { setSyncDot('ok'); }).catch(function(e) { setSyncDot('error'); alert('Erreur sauvegarde : ' + e.message); });
 
         // Retrier les produits en memoire puis re-render
         if (rayon) rayon.produits.sort(function(a, b) { return (a.rangStock || 999) - (b.rangStock || 999); });
