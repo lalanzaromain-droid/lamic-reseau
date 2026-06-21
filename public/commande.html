@@ -369,6 +369,7 @@ var joursParRayon = {};
 var stockSaisi = {};
 var rayonComplet = {};
 var caddyBlur = /android/i.test(navigator.userAgent) ? 'blur(4px)' : 'blur(1px)';
+var _vjSort = 'stock'; // 'stock' ou 'fournisseur'
 var currentCommandeInvId = null;
 var allCommandes = []; // historique from Firestore
 
@@ -1539,7 +1540,20 @@ function renderVjInternal() {
   var rayon = RAYONS.find(function(r) { return r.id === _vjRayon; });
   if (!rayon) return;
 
-  var produits = rayon.produits.filter(function(p) { return p.actif !== false; });
+  var produits = rayon.produits.filter(function(p) { return p.actif !== false; }).slice();
+  produits.sort(function(a, b) {
+    var ra = _vjSort === 'fournisseur' ? (a.rangFournisseur || 999) : (a.rangStock || 999);
+    var rb = _vjSort === 'fournisseur' ? (b.rangFournisseur || 999) : (b.rangStock || 999);
+    return ra - rb;
+  });
+
+  var isStock = _vjSort === 'stock';
+  html += '<div style="display:flex;justify-content:center;margin-bottom:10px">' +
+    '<div style="display:inline-flex;border-radius:10px;overflow:hidden;border:2px solid #7b1fa2">' +
+      '<button onclick="setVjSort(\'stock\')" style="padding:8px 16px;font-family:var(--font);font-weight:800;font-size:.78rem;border:none;cursor:pointer;background:' + (isStock ? '#7b1fa2' : '#fff') + ';color:' + (isStock ? '#fff' : '#7b1fa2') + '">Ordre Stock</button>' +
+      '<button onclick="setVjSort(\'fournisseur\')" style="padding:8px 16px;font-family:var(--font);font-weight:800;font-size:.78rem;border:none;cursor:pointer;background:' + (!isStock ? '#7b1fa2' : '#fff') + ';color:' + (!isStock ? '#fff' : '#7b1fa2') + '">Ordre Fournisseur</button>' +
+    '</div>' +
+  '</div>';
 
   html += '<div style="display:grid;grid-template-columns:1.2fr .6fr .6fr .6fr;gap:4px;padding:6px 10px;background:#1e293b;border-radius:10px 10px 0 0">' +
     '<div style="color:#fff;font-weight:800;font-size:.65rem">Produit</div>' +
@@ -1570,6 +1584,7 @@ function renderVjInternal() {
 }
 
 window.selectVjRayon = function(id) { _vjRayon = id; renderVjInternal(); };
+window.setVjSort = function(mode) { _vjSort = mode; renderVjInternal(); };
 
 window.vjSaveAll = async function() {
   if (!_vjRayon) return;
