@@ -1,5 +1,11 @@
 # Changelog — lamic-reseau
 
+## 27 septembre 2026 — Sécurité règles Firestore
+- `firestore.rules` : `users/{uid}` en écriture interdite côté client (`allow write: if false`). Avant, un user pouvait modifier son propre doc et s'attribuer `role: 'admin'` ou un autre `magasinId`. Les docs users sont créés par la Cloud Function `createMagasin` (Admin SDK) — aucune page n'écrit dans `users/`.
+- Règles communes au projet `teamconnect-valence-2026` (aussi lues par les pages Firestore de lamic-app) — déployées avec `firebase deploy --only firestore:rules`.
+
+---
+
 ## 4 juin 2026 — Inventaire comptable v2
 
 ### Inventaire comptable (`inventaire-compta.html`)

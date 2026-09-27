@@ -24,10 +24,12 @@ service cloud.firestore {
     }
 
     // Users : chacun lit son propre doc, admin peut lire tous
+    // Écriture interdite côté client (sinon un user peut s'auto-attribuer role/magasinId) :
+    // les docs sont créés par la Cloud Function createMagasin (Admin SDK, hors règles)
     match /users/{uid} {
       allow read: if request.auth.uid == uid
         || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-      allow write: if request.auth.uid == uid;
+      allow write: if false;
     }
   }
 }
