@@ -2,14 +2,14 @@
 <header><button class="back" onclick="history.back()">&#8249;</button><div class="title">Seed Catalogues Fournisseur</div></header>
 <div class="main">
 <div class="section"><h3>Catalogues Firestore</h3>
-<p style="color:#999;font-size:13px;margin-bottom:12px">Charge les produits dans <code>catalogues/{type}</code> (1 doc agr&eacute;g&eacute;)</p>
-<button class="btn" id="btn-surgeles" onclick="seed('surgeles')">Charger Surgeles</button>
+<div style="background:#f3e5f5;border-left:4px solid #7b1fa2;border-radius:8px;padding:12px 14px;margin-bottom:14px;color:#4a148c;font-size:14px;font-weight:700">&#x1F512; Mise &agrave; jour faite par Romain au lancement des nouvelles cartes.<div style="font-weight:400;font-size:12px;color:#6a1b9a;margin-top:4px">Ces boutons contiennent l'ancien catalogue (juin 2026) et &eacute;craseraient la version &agrave; jour : ils sont d&eacute;sactiv&eacute;s.</div></div>
+<button class="btn" id="btn-surgeles" disabled style="opacity:.4;cursor:not-allowed" onclick="seed('surgeles')">Charger Surgeles</button>
 <div class="counter" id="counter-surgeles"></div>
 <div class="log" id="log-surgeles"></div>
-<button class="btn" id="btn-frais" onclick="seed('frais')" style="margin-top:16px">Charger Frais</button>
+<button class="btn" id="btn-frais" disabled style="opacity:.4;cursor:not-allowed;margin-top:16px" onclick="seed('frais')">Charger Frais</button>
 <div class="counter" id="counter-frais"></div>
 <div class="log" id="log-frais"></div>
-<button class="btn" id="btn-boissons" onclick="seed('boissons')" style="margin-top:16px">Charger Boissons</button>
+<button class="btn" id="btn-boissons" disabled style="opacity:.4;cursor:not-allowed;margin-top:16px" onclick="seed('boissons')">Charger Boissons</button>
 <div class="counter" id="counter-boissons"></div>
 <div class="log" id="log-boissons"></div>
 </div>
@@ -447,6 +447,9 @@ const DATA_MAP={surgeles:SURGELES,frais:FRAIS,boissons:BOISSONS};
 const CAT_MAP={surgeles:getCatSurgeles,frais:getCatFrais,boissons:getCatBoissons};
 
 window.seed=async function(type){
+  // Désactivé : données de juin 2026, écraserait le catalogue à jour (mise à jour faite par Romain via scripts/)
+  alert('Mise \u00e0 jour faite par Romain au lancement des nouvelles cartes.');
+  return;
   if(!loggedIn){alert('Vous devez etre connecte !');return;}
   const btn=document.getElementById('btn-'+type);
   const counter=document.getElementById('counter-'+type);

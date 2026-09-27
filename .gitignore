@@ -1,3 +1,7 @@
 node_modules/
 .firebase/
 *.log
+
+# Données de catalogue (listes collées, dumps) : ne pas committer
+scripts/catalogue/*.json
+scripts/catalogue/*.txt

@@ -1,5 +1,13 @@
 # Changelog — lamic-reseau
 
+## 27 septembre 2026 — Catalogues nouvelle carte
+- Catalogues Firestore mis à jour depuis le site de commande : surgelés (138 : 124 maj, 14 ajouts, 11 retraits), frais (163 : 156 maj, 7 ajouts, 8 retraits). Familles et ordres stock magasins intacts ; produits au code fournisseur changé retrouvés par référence (clé conservée). Successeurs (conditionnement seul) : Mi-cuit Cookiz x84→x105, Serviettes x6000→x8000 reprennent rang/VJ/état de l'ancien.
+- `commande.html` : produits pas encore placés par un magasin → en bas de son ordre stock (suite du dernier rang, ordre fournisseur), 🆕 dans Paramètres. Avant : rang = ordre fournisseur, donc intercalés au milieu.
+- `admin-seed-catalogue.html` : boutons désactivés (données de juin, écraseraient le catalogue) — "Mise à jour faite par Romain au lancement des nouvelles cartes".
+- `scripts/catalogue/` (nouveau) : parse de la liste copiée, diff, sync ciblée (simulation / `--apply`, `--succ`, `--delete-removed`), vérification. Voir README.
+
+---
+
 ## 27 septembre 2026 — Commande auto (bookmarklet)
 - `commande.html` : bouton "📋 Copier la liste" dans le détail commande et dans le bandeau de chaque commande de l'historique — lignes `ref;nom;quantité` (ordre fournisseur, mêmes quantités que la colonne CMD) pour le bookmarklet.
 - `commande.html` : bouton "🤖 Commande auto" à droite de la ligne des rayons dans Paramètres → `commande-auto.html`.
