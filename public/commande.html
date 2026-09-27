@@ -1048,6 +1048,10 @@ window.ouvrirCommandeDetail = function(cmdId) {
     '<div style="flex:1"><div style="font-size:1.1rem;font-weight:900;color:#fff;text-transform:capitalize">' + (inv.dateStr || inv.date) + '</div>' +
     '<div style="font-size:.78rem;color:#fff;opacity:.8;margin-top:2px">' + (inv.heure || '') + ' \u00b7 ' + (inv.userName || '') + '</div></div></div>';
 
+  html += '<div style="padding:8px 14px;background:#f9f5ff;border-bottom:1px solid #e9d5ff;display:flex;align-items:center;gap:8px">' +
+    '<button onclick="copierListeCommande(\'' + inv.id + '\', \'btn-copier-liste\')" id="btn-copier-liste" style="background:linear-gradient(145deg,#e0f2fe,#bae6fd);color:#0369a1;border:2px solid #7dd3fc;border-radius:10px;padding:6px 12px;font-weight:800;font-size:.75rem;white-space:nowrap;font-family:var(--font);cursor:pointer">&#x1F4CB; Copier la liste</button>' +
+    '</div>';
+
   html += '<div style="background:#' + rayonColor + '15;padding:8px 14px;border-left:4px solid #' + rayonColor + '">' +
     '<div style="font-weight:800;color:#' + rayonColor + ';font-size:.88rem">' + rayonIcon + ' ' + rayonNom + ' \u2014 ' + (inv.jours || 3) + ' jours</div></div>';
 
@@ -1071,13 +1075,19 @@ window.ouvrirCommandeDetail = function(cmdId) {
       else { cmdColor = '#a855f7'; cmdVal = finalCmd + (rayon && rayon.unite === 'cartons' ? ' ctn' : ''); }
     }
 
+    var ov = (inv.overrides || {})[p.produitId];
+    var cmdInputVal = finalCmd > 0 ? finalCmd : 0;
+    var cmdShown = ov !== undefined ? ov : cmdInputVal;
+    var cmdInputColor = ov !== undefined ? '#dc2626' : (cmdInputVal > 0 ? '#a855f7' : '#bbb');
     var rowId = 'cmd-row-' + p.produitId;
     html += '<div id="' + rowId + '" style="display:grid;grid-template-columns:auto 1.2fr .6fr .6fr .8fr;gap:2px;align-items:center;padding:10px 10px;border-bottom:1px solid #e5e7eb;transition:filter .3s,opacity .3s">' +
       '<span class="caddy-check" onclick="toggleCaddy(\'' + rowId + '\')" style="font-size:1.4rem;width:28px;text-align:center;flex-shrink:0;cursor:pointer">\u25CB</span>' +
       '<span onclick="toggleCaddy(\'' + rowId + '\')" style="font-weight:900;font-size:1rem;color:var(--brown);cursor:pointer">' + p.nom + '</span>' +
       '<div onclick="toggleCaddy(\'' + rowId + '\')" style="text-align:center;cursor:pointer"><div style="font-size:.55rem;color:var(--gr)">BESOIN</div><div style="font-size:1.1rem;font-weight:900;color:#1e40af">' + (besoin || '\u2014') + '</div></div>' +
       '<div onclick="toggleCaddy(\'' + rowId + '\')" style="text-align:center;cursor:pointer"><div style="font-size:.55rem;color:var(--gr)">STOCK</div><div style="font-size:1.2rem;font-weight:900;color:var(--brown)">' + stock + '</div></div>' +
-      '<div onclick="toggleCaddy(\'' + rowId + '\')" style="text-align:center;cursor:pointer"><div style="font-size:.55rem;color:var(--gr)">CMD</div><div style="font-size:1.4rem;font-weight:900;color:' + cmdColor + '">' + cmdVal + '</div></div>' +
+      '<div style="text-align:center;padding:2px"><div style="font-size:.55rem;color:var(--gr)">CMD</div>' +
+        '<input type="text" inputMode="numeric" id="cmd-input-' + p.produitId + '" data-prod-id="' + p.produitId + '" data-base-cmd="' + cmdInputVal + '" value="' + cmdShown + '" onfocus="onCmdFocus(this)" onblur="if(this.value===\'\'||this.value===null){this.value=this.dataset.baseCmd;onCmdInput(this)}" oninput="onCmdInput(this)" onkeydown="onCmdKeydown(this,event)" style="width:52px;text-align:center;font-weight:900;font-size:' + (rayon && rayon.unite === 'cartons' ? '1.3rem' : '1.5rem') + ';border:2px solid #e9d5ff;border-radius:8px;background:transparent;color:' + cmdInputColor + ';font-family:var(--font);padding:0 2px;box-sizing:border-box;height:40px">' +
+      '</div>' +
     '</div>';
   }
 
@@ -1085,6 +1095,82 @@ window.ouvrirCommandeDetail = function(cmdId) {
     'Marquer commande passee</button></div>';
 
   container.innerHTML = html;
+};
+
+// CMD modifiable (comme lamic-app) : overrides stockés dans la commande (champ overrides.{produitId})
+var cmdOverrideSaveTimers = {};
+window.onCmdFocus = function(input) {
+  setTimeout(function() { input.select(); }, 10);
+  setTimeout(function() {
+    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 300);
+  input.addEventListener('wheel', function(e) { e.preventDefault(); }, { passive: false });
+};
+window.onCmdInput = function(input) {
+  var val = parseInt(input.value) || 0;
+  var base = parseInt(input.dataset.baseCmd) || 0;
+  var prodId = input.dataset.prodId;
+  var inv = allCommandes.find(function(c) { return c.id === currentCommandeInvId; });
+  if (!inv) return;
+  inv.overrides = inv.overrides || {};
+  if (val !== base) {
+    input.style.color = '#dc2626';
+    inv.overrides[prodId] = val;
+  } else {
+    input.style.color = base > 0 ? '#a855f7' : '#bbb';
+    delete inv.overrides[prodId];
+  }
+  var cmdId = inv.id;
+  clearTimeout(cmdOverrideSaveTimers[prodId]);
+  cmdOverrideSaveTimers[prodId] = setTimeout(function() {
+    var upd = {};
+    upd['overrides.' + prodId] = (val !== base) ? val : deleteField();
+    updateDoc(doc(db, 'magasins', magasinId, 'commandes', cmdId), upd)
+      .then(function() { setSyncDot('ok'); })
+      .catch(function() { setSyncDot('error'); });
+  }, 600);
+};
+window.onCmdKeydown = function(input, e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    var all = Array.from(document.querySelectorAll('input[id^="cmd-input-"]'));
+    var idx = all.indexOf(input);
+    if (idx >= 0 && idx < all.length - 1) {
+      all[idx + 1].focus();
+    } else {
+      input.blur();
+    }
+  }
+};
+
+// Liste pour le bookmarklet Commande auto : ref;nom;quantité, ordre fournisseur,
+// mêmes quantités que la colonne CMD du détail commande
+window.copierListeCommande = function(cmdId, btnId) {
+  var inv = allCommandes.find(function(c) { return c.id === cmdId; });
+  if (!inv) return;
+  var lignes = (inv.lignes || []).slice().sort(function(a, b) { return (a.ordre_fournisseur || 999) - (b.ordre_fournisseur || 999); });
+  var ovs = inv.overrides || {};
+  var out = [];
+  for (var i = 0; i < lignes.length; i++) {
+    var p = lignes[i];
+    var besoin = p.besoin || 0, stock = p.stock || 0, stockMini = p.stockMini || 0;
+    var cmdByMini = stockMini > 0 ? Math.ceil(stockMini - stock) : 0;
+    var ov = ovs[p.produitId];
+    var finalCmd = ov !== undefined ? ov : Math.max(p.a_commander || 0, cmdByMini);
+    if (finalCmd > 0 && (besoin > 0 || (stockMini > 0 && stock < stockMini) || ov !== undefined)) {
+      var nom = (p.nom || '').replace(/^\d+\.\s*/, '').trim();
+      out.push((p.ref_fournisseur || '') + ';' + nom + ';' + finalCmd);
+    }
+  }
+  if (!out.length) { alert('Rien \u00e0 commander dans cette liste'); return; }
+  navigator.clipboard.writeText(out.join('\n')).then(function() {
+    var btn = document.getElementById(btnId);
+    if (btn) {
+      var orig = btn.innerHTML;
+      btn.innerHTML = '&#x2705; Copi\u00e9 (' + out.length + ')';
+      setTimeout(function() { btn.innerHTML = orig; }, 2000);
+    }
+  }).catch(function() { alert('Erreur copie presse-papier'); });
 };
 
 // ============================================
@@ -1339,17 +1425,21 @@ window.ouvrirHistoriqueJour = function(idsStr) {
     var isPassee = inv.statut === 'passee';
 
     html += '<div style="background:var(--wh);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden;margin-top:12px">';
-    html += '<div style="background:' + (isPassee ? 'var(--be)' : 'linear-gradient(145deg,#ce93d8,#ab47bc)') + ';padding:10px 14px">' +
-      '<div style="font-weight:800;color:' + (isPassee ? 'var(--brown)' : '#fff') + ';font-size:.85rem">' + (inv.heure || '') + ' \u00b7 ' + (inv.userName || '') + ' \u00b7 ' + (inv.rayonIcon || '') + ' ' + (inv.rayonNom || inv.type) + ' \u00b7 ' + (inv.jours || 3) + 'j' + (isPassee ? ' \u00b7 \u2713 Passee' : '') + '</div></div>';
+    html += '<div style="background:' + (isPassee ? 'var(--be)' : 'linear-gradient(145deg,#ce93d8,#ab47bc)') + ';padding:10px 14px;display:flex;align-items:center;gap:8px">' +
+      '<div style="flex:1;font-weight:800;color:' + (isPassee ? 'var(--brown)' : '#fff') + ';font-size:.85rem">' + (inv.heure || '') + ' \u00b7 ' + (inv.userName || '') + ' \u00b7 ' + (inv.rayonIcon || '') + ' ' + (inv.rayonNom || inv.type) + ' \u00b7 ' + (inv.jours || 3) + 'j' + (isPassee ? ' \u00b7 \u2713 Passee' : '') + '</div>' +
+      '<button onclick="copierListeCommande(\'' + inv.id + '\', \'btn-copier-hist-' + di2 + '\')" id="btn-copier-hist-' + di2 + '" style="flex-shrink:0;background:linear-gradient(145deg,#e0f2fe,#bae6fd);color:#0369a1;border:2px solid #7dd3fc;border-radius:10px;padding:5px 10px;font-weight:800;font-size:.72rem;white-space:nowrap;font-family:var(--font);cursor:pointer">&#x1F4CB; Copier la liste</button></div>';
 
     var lignes = (inv.lignes || []).slice().sort(function(a, b) { return (a.ordre_fournisseur || 999) - (b.ordre_fournisseur || 999); });
     var rang = 0;
     for (var pi = 0; pi < lignes.length; pi++) {
       var p = lignes[pi];
-      if (p.a_commander <= 0 && p.stock <= 0) continue;
+      if (p.a_commander <= 0 && p.stock <= 0 && (inv.overrides || {})[p.produitId] === undefined) continue;
       rang++;
       var cmdColor = 'var(--gr)', cmdVal = '\u2014';
-      if (p.besoin > 0) {
+      var ovH = (inv.overrides || {})[p.produitId];
+      if (ovH !== undefined) {
+        cmdColor = '#dc2626'; cmdVal = ovH + (rayon && rayon.unite === 'cartons' ? ' ctn' : '');
+      } else if (p.besoin > 0) {
         if (p.a_commander <= 0) { cmdColor = '#6b4c11'; cmdVal = '\u2713 OK'; }
         else { cmdColor = '#a855f7'; cmdVal = p.a_commander + (rayon && rayon.unite === 'cartons' ? ' ctn' : ''); }
       }
@@ -1435,7 +1525,9 @@ function renderParamTabInternal() {
   }
 
   container.innerHTML =
-    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">' + btns + '</div>' +
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center">' + btns +
+      '<a href="/commande-auto.html" style="margin-left:auto;padding:5px 10px;border-radius:20px;font-size:.78rem;font-weight:700;background:linear-gradient(145deg,#ab47bc,#7b1fa2);color:#fff;text-decoration:none;white-space:nowrap">&#x1F916; Commande auto</a>' +
+    '</div>' +
     '<div style="display:flex;gap:6px;margin-bottom:10px">' +
       '<button onclick="setParamSort(\'stock\')" style="flex:1;padding:8px;border-radius:10px;font-size:.78rem;font-weight:800;background:' + (paramSort === 'stock' ? '#7b1fa2' : 'var(--be)') + ';color:' + (paramSort === 'stock' ? '#fff' : 'var(--brown)') + '">Tri Stock</button>' +
       '<button onclick="setParamSort(\'fournisseur\')" style="flex:1;padding:8px;border-radius:10px;font-size:.78rem;font-weight:800;background:' + (paramSort === 'fournisseur' ? '#7b1fa2' : 'var(--be)') + ';color:' + (paramSort === 'fournisseur' ? '#fff' : 'var(--brown)') + '">Tri Fournisseur</button>' +

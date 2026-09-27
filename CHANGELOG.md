@@ -1,5 +1,11 @@
 # Changelog — lamic-reseau
 
+## 27 septembre 2026 — Commande auto (bookmarklet)
+- `commande.html` : bouton "📋 Copier la liste" dans le détail commande et dans le bandeau de chaque commande de l'historique — lignes `ref;nom;quantité` (ordre fournisseur, mêmes quantités que la colonne CMD) pour le bookmarklet.
+- `commande.html` : bouton "🤖 Commande auto" à droite de la ligne des rayons dans Paramètres → `commande-auto.html`.
+- `commande-auto.html` (nouveau) : page d'installation du bookmarklet v2 (repris de lamic-app `bookmarklet-commande.html`), retour vers `/commande.html`.
+- `commande.html` : colonne CMD modifiable dans le détail commande (comme lamic-app : sélection au focus, Entrée → suivant, vide = valeur calculée, rouge si modifié). Overrides enregistrés dans la commande (`overrides.{produitId}`, debounce 600 ms), repris par Copier la liste et affichés dans l'historique.
+
 ## 27 septembre 2026 — Sécurité règles Firestore
 - `firestore.rules` : `users/{uid}` en écriture interdite côté client (`allow write: if false`). Avant, un user pouvait modifier son propre doc et s'attribuer `role: 'admin'` ou un autre `magasinId`. Les docs users sont créés par la Cloud Function `createMagasin` (Admin SDK) — aucune page n'écrit dans `users/`.
 - Règles communes au projet `teamconnect-valence-2026` (aussi lues par les pages Firestore de lamic-app) — déployées avec `firebase deploy --only firestore:rules`.
